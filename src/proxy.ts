@@ -16,8 +16,14 @@ function isAuthRoute(pathname: string) {
   );
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Public routes render immediately without waiting on Supabase Auth API
+  if (isPublicRoute(pathname)) {
+    return NextResponse.next();
+  }
+
   const { supabaseResponse, user } = await updateSession(request);
 
   if (pathname === "/") {
