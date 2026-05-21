@@ -12,33 +12,61 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
+      account_projects: {
+        Row: {
+          account_id: string | null
+          annual_volume: string | null
+          created_at: string | null
+          distribution_plan: string | null
+          forecast: string | null
+          id: string
+          launch_date: string | null
+          manufacturing_venues: string | null
+          marketing_request: string | null
+          retail_price_range: string | null
+          technical_requirement: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          annual_volume?: string | null
+          created_at?: string | null
+          distribution_plan?: string | null
+          forecast?: string | null
+          id?: string
+          launch_date?: string | null
+          manufacturing_venues?: string | null
+          marketing_request?: string | null
+          retail_price_range?: string | null
+          technical_requirement?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          annual_volume?: string | null
+          created_at?: string | null
+          distribution_plan?: string | null
+          forecast?: string | null
+          id?: string
+          launch_date?: string | null
+          manufacturing_venues?: string | null
+          marketing_request?: string | null
+          retail_price_range?: string | null
+          technical_requirement?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_projects_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           brand_name: string
@@ -79,13 +107,6 @@ export type Database = {
             columns: ["business_category_id"]
             isOneToOne: false
             referencedRelation: "business_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "accounts_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -162,6 +183,120 @@ export type Database = {
           },
         ]
       }
+      contacts: {
+        Row: {
+          account_id: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string | null
+          phone: string | null
+          title: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          title?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_materials: {
+        Row: {
+          account_id: string | null
+          created_at: string | null
+          file_url: string | null
+          id: string
+          status: string | null
+          title: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          status?: string | null
+          title?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          status?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_materials_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          account_id: string | null
+          approval_status: string | null
+          approved_at: string | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          product_category: string | null
+          product_number: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          product_category?: string | null
+          product_number?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          product_category?: string | null
+          product_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -188,6 +323,47 @@ export type Database = {
           role?: string | null
         }
         Relationships: []
+      }
+      quotes: {
+        Row: {
+          account_id: string | null
+          compound: string | null
+          created_by: string | null
+          currency: string | null
+          id: string
+          price: number | null
+          quote_date: string | null
+          style: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          compound?: string | null
+          created_by?: string | null
+          currency?: string | null
+          id?: string
+          price?: number | null
+          quote_date?: string | null
+          style?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          compound?: string | null
+          created_by?: string | null
+          currency?: string | null
+          id?: string
+          price?: number | null
+          quote_date?: string | null
+          style?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sales_activities: {
         Row: {
@@ -241,13 +417,6 @@ export type Database = {
             referencedRelation: "contact_persons"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "sales_activities_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       stages: {
@@ -270,6 +439,41 @@ export type Database = {
           stage_name?: string
         }
         Relationships: []
+      }
+      supply_chain: {
+        Row: {
+          account_id: string | null
+          created_at: string | null
+          factory_name: string | null
+          id: string
+          location: string | null
+          notes: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string | null
+          factory_name?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string | null
+          factory_name?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supply_chain_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -405,9 +609,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
