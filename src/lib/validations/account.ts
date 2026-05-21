@@ -1,16 +1,13 @@
 import { z } from "zod";
 
+const uuid = z.string().uuid("Please select a valid option");
+
 export const createAccountSchema = z.object({
-  brand: z.string().min(1, "Brand name is required"),
-  category: z.string().min(1, "Business category is required"),
-  stage: z.enum([
-    "prospect",
-    "qualified",
-    "negotiation",
-    "closed_won",
-    "closed_lost",
-  ]),
-  source: z.enum(["referral", "inbound", "outbound", "event", "partner"]),
+  brandName: z.string().min(1, "Brand name is required").max(200),
+  businessCategoryId: uuid,
+  stageId: uuid,
+  source: z.string().min(1, "Source is required").max(100),
+  status: z.string().max(50).optional(),
 });
 
 export type CreateAccountFormValues = z.infer<typeof createAccountSchema>;

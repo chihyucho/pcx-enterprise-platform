@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AccountsTable } from "@/components/tables/accounts-table";
-import { CreateAccountModal } from "@/components/forms/create-account-modal";
 import { AccountsEmptyState } from "@/components/accounts/accounts-empty-state";
 import type { AccountListItem, StageOption } from "@/types/account";
 
@@ -27,7 +27,6 @@ export function AccountsPageClient({
 }: AccountsPageClientProps) {
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("all");
-  const [modalOpen, setModalOpen] = useState(false);
 
   const filteredAccounts = useMemo(() => {
     return accounts.filter((account) => {
@@ -52,9 +51,11 @@ export function AccountsPageClient({
             Manage sales accounts and pipeline stages.
           </p>
         </div>
-        <Button onClick={() => setModalOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Create Account
+        <Button asChild>
+          <Link href="/sales-system/accounts/new">
+            <Plus className="h-4 w-4" />
+            Create New Account
+          </Link>
         </Button>
       </div>
 
@@ -98,8 +99,6 @@ export function AccountsPageClient({
           <AccountsTable accounts={filteredAccounts} />
         </>
       )}
-
-      <CreateAccountModal open={modalOpen} onOpenChange={setModalOpen} />
     </div>
   );
 }

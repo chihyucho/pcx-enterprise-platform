@@ -40,6 +40,7 @@ function mapStageOption(row: StageListRow): StageOption {
   return {
     id: row.id,
     name: row.stage_name,
+    orderIndex: row.order_index,
   };
 }
 

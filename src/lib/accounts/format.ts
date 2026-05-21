@@ -15,21 +15,24 @@ export function formatSourceLabel(source: string): string {
   return SOURCE_LABELS[normalized] ?? source;
 }
 
-function normalizeStageKey(stageName: string): string {
-  return stageName.toLowerCase().replace(/\s+/g, "_");
-}
-
+/**
+ * Badge styling from the stage name in `public.stages.stage_name`.
+ * Does not assume fixed stage labels — works with your Supabase data.
+ */
 export function stageBadgeVariant(
   stageName: string
 ): "default" | "secondary" | "success" | "warning" | "muted" {
-  switch (normalizeStageKey(stageName)) {
-    case "closed_won":
-      return "success";
-    case "negotiation":
-      return "warning";
-    case "closed_lost":
-      return "muted";
-    default:
-      return "secondary";
+  const name = stageName.toLowerCase();
+
+  if (name.includes("won") || name.includes("closed win")) {
+    return "success";
   }
+  if (name.includes("lost") || name.includes("closed loss")) {
+    return "muted";
+  }
+  if (name.includes("negotiat")) {
+    return "warning";
+  }
+
+  return "secondary";
 }

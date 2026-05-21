@@ -1,4 +1,6 @@
-import { Building2 } from "lucide-react";
+import Link from "next/link";
+import { Building2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
@@ -17,6 +19,12 @@ export function AccountsEmptyState() {
         <CardDescription>
           Create your first account to start building your sales pipeline.
         </CardDescription>
+        <Button asChild className="mt-4">
+          <Link href="/sales-system/accounts/new">
+            <Plus className="h-4 w-4" />
+            Create New Account
+          </Link>
+        </Button>
       </CardHeader>
     </Card>
   );

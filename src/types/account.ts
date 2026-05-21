@@ -10,7 +10,15 @@ export interface AccountListItem {
 
 export type AccountDetail = AccountListItem;
 
+/** Row from `public.stages` */
 export interface StageOption {
+  id: string;
+  name: string;
+  orderIndex: number | null;
+}
+
+/** Row from `public.business_categories` */
+export interface CategoryOption {
   id: string;
   name: string;
 }

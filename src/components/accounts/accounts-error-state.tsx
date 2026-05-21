@@ -30,7 +30,17 @@ export function AccountsErrorState({ message }: AccountsErrorStateProps) {
           </div>
           <CardDescription>{message}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {message.includes("permission denied") ? (
+            <p className="text-sm text-muted-foreground">
+              Apply RLS policies from{" "}
+              <code className="text-xs">
+                supabase/migrations/20260520120000_sales_rls_and_seed.sql
+              </code>{" "}
+              (policies only — no seed data). Run in the Supabase SQL Editor,
+              then refresh.
+            </p>
+          ) : null}
           <Button variant="outline" asChild>
             <Link href="/sales-system/accounts">Try again</Link>
           </Button>
