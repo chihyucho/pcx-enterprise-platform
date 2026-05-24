@@ -1,18 +1,8 @@
 "use server";
 
-import { getAccountTabData, getBrandOverview } from "@/lib/accounts/tab-queries";
+import { getAccountTabData } from "@/lib/accounts/tab-queries";
 import type { AccountTabTableName } from "@/lib/schema/account-detail-tabs";
-import type {
-  AccountTabData,
-  AccountTabRowMap,
-  BrandOverviewResult,
-} from "@/types/account-detail";
-
-export async function fetchBrandOverview(
-  accountId: string
-): Promise<BrandOverviewResult> {
-  return getBrandOverview(accountId);
-}
+import type { AccountTabData, AccountTabRowMap } from "@/types/account-detail";
 
 export async function fetchAccountTabData<T extends AccountTabTableName>(
   table: T,

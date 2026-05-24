@@ -7,7 +7,7 @@ export type TabQueryResult<T> =
 
 export type AccountProjectsRow = Tables<"account_projects">;
 export type SalesActivitiesRow = Tables<"sales_activities">;
-export type ContactsRow = Tables<"contacts">;
+export type ContactPersonsRow = Tables<"contact_persons">;
 export type ProductsRow = Tables<"products">;
 export type QuotesRow = Tables<"quotes">;
 export type MarketingMaterialsRow = Tables<"marketing_materials">;
@@ -16,7 +16,7 @@ export type SupplyChainRow = Tables<"supply_chain">;
 export type AccountTabRowMap = {
   account_projects: AccountProjectsRow;
   sales_activities: SalesActivitiesRow;
-  contacts: ContactsRow;
+  contact_persons: ContactPersonsRow;
   products: ProductsRow;
   quotes: QuotesRow;
   marketing_materials: MarketingMaterialsRow;
@@ -27,16 +27,8 @@ export type AccountTabData<T extends AccountTabTableName> = TabQueryResult<
   AccountTabRowMap[T]
 >;
 
-export interface BrandOverviewData {
-  brand_name: string;
-  category_name: string;
-  stage_name: string;
-  source: string | null;
-  status: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
+export type BrandOverviewData = Tables<"brand_overview">;
 
 export type BrandOverviewResult =
-  | { data: BrandOverviewData; error: null }
+  | { data: BrandOverviewData | null; error: null }
   | { data: null; error: string };

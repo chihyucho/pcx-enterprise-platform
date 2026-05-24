@@ -7,7 +7,7 @@ import type { AccountTabTableName } from "@/lib/schema/account-detail-tabs";
 import type { AccountCrudTableName } from "@/types/tab-crud";
 import { BrandOverviewTab } from "@/components/accounts/detail/brand-overview-tab";
 import { AccountTabCrud } from "@/components/accounts/detail/account-tab-crud";
-import { ContactsTab } from "@/components/accounts/detail/contacts-tab";
+import { ProjectDetailTab } from "@/components/accounts/detail/project-detail-tab";
 
 const CRUD_TABLE_MAP: Record<
   Exclude<AccountTabTableName, never>,
@@ -15,7 +15,7 @@ const CRUD_TABLE_MAP: Record<
 > = {
   account_projects: "account_projects",
   sales_activities: "sales_activities",
-  contacts: "contacts",
+  contact_persons: "contact_persons",
   products: "products",
   quotes: "quotes",
   marketing_materials: "marketing_materials",
@@ -56,9 +56,10 @@ export function AccountDetailTabs({ accountId }: AccountDetailTabsProps) {
               accountId={accountId}
               enabled={activeTab === tab.id}
             />
-          ) : tab.id === "contacts" ? (
-            <ContactsTab
+          ) : tab.id === "project" ? (
+            <ProjectDetailTab
               accountId={accountId}
+              title={tab.label}
               enabled={activeTab === tab.id}
             />
           ) : (

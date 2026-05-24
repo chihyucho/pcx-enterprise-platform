@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       account_projects: {
@@ -25,6 +50,7 @@ export type Database = {
           launch_date: string | null
           manufacturing_venues: string | null
           marketing_request: string | null
+          project_name: string | null
           retail_price_range: string | null
           technical_requirement: string | null
           updated_at: string | null
@@ -39,6 +65,7 @@ export type Database = {
           launch_date?: string | null
           manufacturing_venues?: string | null
           marketing_request?: string | null
+          project_name?: string | null
           retail_price_range?: string | null
           technical_requirement?: string | null
           updated_at?: string | null
@@ -53,6 +80,7 @@ export type Database = {
           launch_date?: string | null
           manufacturing_venues?: string | null
           marketing_request?: string | null
+          project_name?: string | null
           retail_price_range?: string | null
           technical_requirement?: string | null
           updated_at?: string | null
@@ -114,6 +142,62 @@ export type Database = {
             columns: ["stage_id"]
             isOneToOne: false
             referencedRelation: "stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brand_overview: {
+        Row: {
+          account_id: string
+          brand_website: string | null
+          company_address: string | null
+          competitors: string | null
+          corporate_background_company_history: string | null
+          created_at: string | null
+          distribution: string | null
+          financials: string | null
+          id: string
+          parent_company_or_ownership: string | null
+          social_media: string | null
+          territories: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          brand_website?: string | null
+          company_address?: string | null
+          competitors?: string | null
+          corporate_background_company_history?: string | null
+          created_at?: string | null
+          distribution?: string | null
+          financials?: string | null
+          id?: string
+          parent_company_or_ownership?: string | null
+          social_media?: string | null
+          territories?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          brand_website?: string | null
+          company_address?: string | null
+          competitors?: string | null
+          corporate_background_company_history?: string | null
+          created_at?: string | null
+          distribution?: string | null
+          financials?: string | null
+          id?: string
+          parent_company_or_ownership?: string | null
+          social_media?: string | null
+          territories?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_overview_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -183,66 +267,40 @@ export type Database = {
           },
         ]
       }
-      contacts: {
-        Row: {
-          account_id: string | null
-          created_at: string | null
-          email: string | null
-          id: string
-          name: string | null
-          phone: string | null
-          title: string | null
-        }
-        Insert: {
-          account_id?: string | null
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          name?: string | null
-          phone?: string | null
-          title?: string | null
-        }
-        Update: {
-          account_id?: string | null
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          name?: string | null
-          phone?: string | null
-          title?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contacts_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       marketing_materials: {
         Row: {
           account_id: string | null
+          approved_at: string | null
+          channel: string | null
           created_at: string | null
+          description: string | null
           file_url: string | null
           id: string
+          project_id: string | null
           status: string | null
           title: string | null
         }
         Insert: {
           account_id?: string | null
+          approved_at?: string | null
+          channel?: string | null
           created_at?: string | null
+          description?: string | null
           file_url?: string | null
           id?: string
+          project_id?: string | null
           status?: string | null
           title?: string | null
         }
         Update: {
           account_id?: string | null
+          approved_at?: string | null
+          channel?: string | null
           created_at?: string | null
+          description?: string | null
           file_url?: string | null
           id?: string
+          project_id?: string | null
           status?: string | null
           title?: string | null
         }
@@ -252,6 +310,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_materials_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "account_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -266,6 +331,7 @@ export type Database = {
           image_url: string | null
           product_category: string | null
           product_number: string | null
+          project_id: string | null
         }
         Insert: {
           account_id?: string | null
@@ -276,6 +342,7 @@ export type Database = {
           image_url?: string | null
           product_category?: string | null
           product_number?: string | null
+          project_id?: string | null
         }
         Update: {
           account_id?: string | null
@@ -286,6 +353,7 @@ export type Database = {
           image_url?: string | null
           product_category?: string | null
           product_number?: string | null
+          project_id?: string | null
         }
         Relationships: [
           {
@@ -293,6 +361,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "account_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -331,7 +406,9 @@ export type Database = {
           created_by: string | null
           currency: string | null
           id: string
+          notes: string | null
           price: number | null
+          project_id: string | null
           quote_date: string | null
           style: string | null
         }
@@ -341,7 +418,9 @@ export type Database = {
           created_by?: string | null
           currency?: string | null
           id?: string
+          notes?: string | null
           price?: number | null
+          project_id?: string | null
           quote_date?: string | null
           style?: string | null
         }
@@ -351,7 +430,9 @@ export type Database = {
           created_by?: string | null
           currency?: string | null
           id?: string
+          notes?: string | null
           price?: number | null
+          project_id?: string | null
           quote_date?: string | null
           style?: string | null
         }
@@ -361,6 +442,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "account_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -376,6 +464,7 @@ export type Database = {
           id: string
           next_follow_up: string | null
           notes: string | null
+          project_id: string | null
           subject: string | null
         }
         Insert: {
@@ -388,6 +477,7 @@ export type Database = {
           id?: string
           next_follow_up?: string | null
           notes?: string | null
+          project_id?: string | null
           subject?: string | null
         }
         Update: {
@@ -400,6 +490,7 @@ export type Database = {
           id?: string
           next_follow_up?: string | null
           notes?: string | null
+          project_id?: string | null
           subject?: string | null
         }
         Relationships: [
@@ -415,6 +506,13 @@ export type Database = {
             columns: ["contact_person_id"]
             isOneToOne: false
             referencedRelation: "contact_persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_activities_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "account_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -448,6 +546,7 @@ export type Database = {
           id: string
           location: string | null
           notes: string | null
+          project_id: string | null
         }
         Insert: {
           account_id?: string | null
@@ -456,6 +555,7 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          project_id?: string | null
         }
         Update: {
           account_id?: string | null
@@ -464,6 +564,7 @@ export type Database = {
           id?: string
           location?: string | null
           notes?: string | null
+          project_id?: string | null
         }
         Relationships: [
           {
@@ -471,6 +572,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supply_chain_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "account_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -609,6 +717,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },

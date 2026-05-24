@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  deleteAccountTabRow,
   fetchAccountTabRows,
   insertAccountTabRow,
+  updateAccountTabRow,
 } from "@/lib/accounts/tab-client";
 import { TAB_FORM_FIELDS } from "@/lib/schema/tab-form-fields";
 import type { AccountCrudTableName } from "@/types/tab-crud";
@@ -71,6 +73,53 @@ export function useAccountTabCrud<T extends AccountCrudTableName>(
     [table, accountId, load]
   );
 
+  const update = useCallback(
+    async (id: string, values: Record<string, string>) => {
+      setState((prev) => ({ ...prev, submitting: true, error: null }));
+      const result = await updateAccountTabRow(
+        table,
+        id,
+        values,
+        TAB_FORM_FIELDS[table]
+      );
+
+      if (!result.success) {
+        setState((prev) => ({
+          ...prev,
+          submitting: false,
+          error: result.error,
+        }));
+        return { success: false as const, error: result.error };
+      }
+
+      await load();
+      setState((prev) => ({ ...prev, submitting: false }));
+      return { success: true as const, error: null };
+    },
+    [table, load]
+  );
+
+  const remove = useCallback(
+    async (id: string) => {
+      setState((prev) => ({ ...prev, submitting: true, error: null }));
+      const result = await deleteAccountTabRow(table, id);
+
+      if (!result.success) {
+        setState((prev) => ({
+          ...prev,
+          submitting: false,
+          error: result.error,
+        }));
+        return { success: false as const, error: result.error };
+      }
+
+      await load();
+      setState((prev) => ({ ...prev, submitting: false }));
+      return { success: true as const, error: null };
+    },
+    [table, load]
+  );
+
   useEffect(() => {
     if (!enabled) return;
     load();
@@ -83,6 +132,8 @@ export function useAccountTabCrud<T extends AccountCrudTableName>(
     submitting: state.submitting,
     reload: load,
     create,
+    update,
+    remove,
     formFields: TAB_FORM_FIELDS[table],
   };
 }

@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  fetchAccountTabData,
-  fetchBrandOverview,
-} from "@/lib/accounts/tab-actions";
+import { fetchAccountTabData } from "@/lib/accounts/tab-actions";
+import { fetchBrandOverview } from "@/lib/accounts/tab-client";
 import type { AccountTabTableName } from "@/lib/schema/account-detail-tabs";
 import type {
   AccountTabRowMap,
@@ -28,12 +26,18 @@ export function useBrandOverview(accountId: string, enabled: boolean) {
 
   const load = useCallback(async () => {
     setState({ data: null, error: null, loading: true });
-    const result = await fetchBrandOverview(accountId);
-    if (result.error) {
-      setState({ data: null, error: result.error, loading: false });
-      return;
+    try {
+      const result = await fetchBrandOverview(accountId);
+      if (result.error) {
+        setState({ data: null, error: result.error, loading: false });
+        return;
+      }
+      setState({ data: result.data, error: null, loading: false });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load brand overview";
+      setState({ data: null, error: message, loading: false });
     }
-    setState({ data: result.data, error: null, loading: false });
   }, [accountId]);
 
   useEffect(() => {

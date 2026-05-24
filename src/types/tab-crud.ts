@@ -3,7 +3,6 @@ import type { Tables, TablesInsert } from "@/types/database.types";
 /** Tables with account_id used in account detail CRUD tabs */
 export type AccountCrudTableName =
   | "sales_activities"
-  | "contacts"
   | "contact_persons"
   | "products"
   | "quotes"

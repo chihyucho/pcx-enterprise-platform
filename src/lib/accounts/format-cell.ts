@@ -10,7 +10,12 @@ const DATE_KEYS = new Set([
   "launch_date",
 ]);
 
-const URL_KEYS = new Set(["file_url", "image_url", "linkedin"]);
+const URL_KEYS = new Set([
+  "file_url",
+  "image_url",
+  "linkedin",
+  "brand_website",
+]);
 
 export function formatCellValue(
   key: string,

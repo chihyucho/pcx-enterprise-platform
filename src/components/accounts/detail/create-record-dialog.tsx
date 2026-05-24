@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { RecordFormFields } from "@/components/accounts/detail/record-form-fields";
+import { ProjectSelectField } from "@/components/accounts/detail/project-select-field";
+import { emptyFormValues } from "@/lib/accounts/row-form-values";
+import type { AccountProjectRow } from "@/lib/accounts/project-utils";
 import type { TabFormFieldDef } from "@/lib/schema/tab-form-fields";
+import { RECORD_FORM_DIALOG_CLASS } from "@/lib/ui/dialog-sizes";
 
 interface CreateRecordDialogProps {
   open: boolean;
@@ -26,12 +29,19 @@ interface CreateRecordDialogProps {
     success: boolean;
     error: string | null;
   }>;
+  projects?: AccountProjectRow[];
+  defaultProjectId?: string | null;
 }
 
-function initialValues(fields: TabFormFieldDef[]): Record<string, string> {
-  return Object.fromEntries(
-    fields.map((f) => [f.name, f.type === "boolean" ? "false" : ""])
-  );
+function buildInitialValues(
+  fields: TabFormFieldDef[],
+  defaultProjectId?: string | null
+): Record<string, string> {
+  const values = emptyFormValues(fields);
+  if (defaultProjectId) {
+    values.project_id = defaultProjectId;
+  }
+  return values;
 }
 
 export function CreateRecordDialog({
@@ -43,15 +53,25 @@ export function CreateRecordDialog({
   fields,
   submitting,
   onSubmit,
+  projects = [],
+  defaultProjectId = null,
 }: CreateRecordDialogProps) {
+  const showProjectSelect = projects.length > 0;
   const [values, setValues] = useState<Record<string, string>>(() =>
-    initialValues(fields)
+    buildInitialValues(fields, defaultProjectId)
   );
   const [formError, setFormError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (open) {
+      setValues(buildInitialValues(fields, defaultProjectId));
+      setFormError(null);
+    }
+  }, [open, fields, defaultProjectId]);
+
   function handleOpenChange(next: boolean) {
     if (!next) {
-      setValues(initialValues(fields));
+      setValues(buildInitialValues(fields, defaultProjectId));
       setFormError(null);
     }
     onOpenChange(next);
@@ -64,6 +84,11 @@ export function CreateRecordDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
+
+    if (showProjectSelect && !values.project_id?.trim()) {
+      setFormError("Project is required.");
+      return;
+    }
 
     for (const field of fields) {
       if (field.required && !values[field.name]?.trim()) {
@@ -78,13 +103,13 @@ export function CreateRecordDialog({
       return;
     }
 
-    setValues(initialValues(fields));
+    setValues(buildInitialValues(fields, defaultProjectId));
     onOpenChange(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className={RECORD_FORM_DIALOG_CLASS}>
         <DialogHeader>
           <DialogTitle>Create New — {title}</DialogTitle>
           <DialogDescription>
@@ -93,43 +118,18 @@ export function CreateRecordDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map((field) => (
-            <div key={field.name} className="space-y-2">
-              <Label htmlFor={field.name}>
-                {field.label}
-                {field.required ? (
-                  <span className="text-destructive"> *</span>
-                ) : null}
-              </Label>
-              {field.type === "textarea" ? (
-                <textarea
-                  id={field.name}
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  value={values[field.name] ?? ""}
-                  onChange={(e) => updateField(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                />
-              ) : field.type === "boolean" ? (
-                <select
-                  id={field.name}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                  value={values[field.name] ?? "false"}
-                  onChange={(e) => updateField(field.name, e.target.value)}
-                >
-                  <option value="false">No</option>
-                  <option value="true">Yes</option>
-                </select>
-              ) : (
-                <Input
-                  id={field.name}
-                  type={field.type === "date" ? "date" : field.type === "number" ? "number" : "text"}
-                  value={values[field.name] ?? ""}
-                  onChange={(e) => updateField(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                />
-              )}
-            </div>
-          ))}
+          {showProjectSelect ? (
+            <ProjectSelectField
+              projects={projects}
+              value={values.project_id ?? ""}
+              onChange={(id) => updateField("project_id", id)}
+            />
+          ) : null}
+          <RecordFormFields
+            fields={fields}
+            values={values}
+            onChange={updateField}
+          />
           {formError ? (
             <p className="text-sm text-destructive" role="alert">
               {formError}

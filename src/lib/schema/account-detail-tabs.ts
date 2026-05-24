@@ -4,7 +4,7 @@ import { schemaMap } from "@/lib/schema/tables";
 export type AccountTabTableName =
   | "account_projects"
   | "sales_activities"
-  | "contacts"
+  | "contact_persons"
   | "products"
   | "quotes"
   | "marketing_materials"
@@ -40,7 +40,7 @@ const TAB_META: Record<
     label: schemaMap.sales_activities.label,
   },
   contacts: {
-    table: "contacts",
+    table: "contact_persons",
     label: schemaMap.contacts.label,
   },
   products: {
