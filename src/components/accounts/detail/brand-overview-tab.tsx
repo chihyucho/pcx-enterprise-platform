@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { Pencil } from "lucide-react";
 import { useBrandOverview } from "@/hooks/use-account-tab-data";
-import { updateBrandOverview } from "@/lib/accounts/tab-client";
+import { saveBrandOverview } from "@/lib/accounts/tab-client";
 import { BRAND_OVERVIEW_FIELDS } from "@/lib/schema/tab-columns";
 import { BRAND_OVERVIEW_FORM_FIELDS } from "@/lib/schema/tab-form-fields";
 import { EditBrandOverviewDialog } from "@/components/accounts/detail/edit-brand-overview-dialog";
+import { AccountTabPanel } from "@/components/accounts/detail/account-tab-panel";
 import { Button } from "@/components/ui/button";
 import {
   formatCellValue,
   isUrlColumn,
 } from "@/lib/accounts/format-cell";
-import { AccountTabPanel } from "@/components/accounts/detail/account-tab-panel";
 import {
   Table,
   TableBody,
@@ -80,13 +80,10 @@ export function BrandOverviewTab({
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSave(values: Record<string, string>) {
-    if (!data) {
-      return { success: false, error: "No brand overview record to update." };
-    }
-
     setSubmitting(true);
-    const result = await updateBrandOverview(
-      data.id,
+    const result = await saveBrandOverview(
+      accountId,
+      data?.id ?? null,
       values,
       BRAND_OVERVIEW_FORM_FIELDS
     );
@@ -102,51 +99,59 @@ export function BrandOverviewTab({
   return (
     <AccountTabPanel
       title="Brand Overview"
-      description="Fields from the brand_overview table for this account."
+      description="Brand overview details for this account."
       loading={loading}
       error={error}
       onRetry={reload}
     >
-      {data ? (
-        <div className="rounded-lg border bg-card">
-          <Table>
-            <TableBody>
-              {BRAND_OVERVIEW_FIELDS.map((field) => (
-                <TableRow key={field.key}>
-                  <TableCell className="w-[min(14rem,35%)] align-top font-medium text-muted-foreground">
-                    {field.label}
-                  </TableCell>
-                  <TableCell className="align-top">
-                    <BrandOverviewValue fieldKey={field.key} data={data} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="flex justify-end border-t px-4 py-3">
-            <Button type="button" variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil className="h-4 w-4" />
-              Edit Brand Overview
-            </Button>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight">
+              Brand Overview
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              One overview record per account. Use Edit to add or update details.
+            </p>
           </div>
+          <Button type="button" variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Button>
         </div>
-      ) : !error ? (
-        <p className="rounded-lg border border-dashed bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
-          No brand overview record yet for this account. Add a row in Supabase
-          with{" "}
-          <code className="text-xs">account_id = {accountId}</code>.
-        </p>
-      ) : null}
-      {data ? (
-        <EditBrandOverviewDialog
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          data={data}
-          fields={BRAND_OVERVIEW_FORM_FIELDS}
-          submitting={submitting}
-          onSubmit={handleSave}
-        />
-      ) : null}
+
+        {data ? (
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableBody>
+                {BRAND_OVERVIEW_FIELDS.map((field) => (
+                  <TableRow key={field.key}>
+                    <TableCell className="w-[min(14rem,35%)] align-top font-medium text-muted-foreground">
+                      {field.label}
+                    </TableCell>
+                    <TableCell className="align-top">
+                      <BrandOverviewValue fieldKey={field.key} data={data} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <p className="rounded-lg border border-dashed bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
+            No brand overview yet. Click Edit to add details for this account.
+          </p>
+        )}
+      </div>
+
+      <EditBrandOverviewDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        data={data}
+        fields={BRAND_OVERVIEW_FORM_FIELDS}
+        submitting={submitting}
+        onSubmit={handleSave}
+      />
     </AccountTabPanel>
   );
 }

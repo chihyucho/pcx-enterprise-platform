@@ -402,6 +402,60 @@ export async function updateBrandOverview(
   return { success: true, error: null };
 }
 
+export async function insertBrandOverview(
+  accountId: string,
+  values: Record<string, string>,
+  fields: TabFormFieldDef[]
+): Promise<TabInsertResult> {
+  const supabase = createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) {
+    return { success: false, error: authError.message };
+  }
+  if (!user) {
+    return { success: false, error: "You must be signed in to save brand overview." };
+  }
+
+  const payload = {
+    account_id: accountId,
+    ...buildBrandOverviewPayload(values, fields),
+  };
+
+  const { data, error } = await supabase
+    .from("brand_overview")
+    .insert(payload)
+    .select("id");
+
+  if (error) {
+    return { success: false, error: formatDbError(error) };
+  }
+
+  if (!data?.length) {
+    return {
+      success: false,
+      error: "Insert was not applied. Check permissions or try again.",
+    };
+  }
+
+  return { success: true, error: null };
+}
+
+export async function saveBrandOverview(
+  accountId: string,
+  recordId: string | null,
+  values: Record<string, string>,
+  fields: TabFormFieldDef[]
+): Promise<TabInsertResult> {
+  if (recordId) {
+    return updateBrandOverview(recordId, values, fields);
+  }
+  return insertBrandOverview(accountId, values, fields);
+}
+
 export async function updateAccountTabRow<T extends AccountCrudTableName>(
   table: T,
   id: string,
@@ -427,6 +481,35 @@ export async function updateAccountTabRow<T extends AccountCrudTableName>(
   const payload = buildUpdatePayload<T>(table, values, fields);
   const updateError = await updateRowForTable(table, id, payload);
 
+  if (updateError) {
+    return { success: false, error: updateError };
+  }
+
+  return { success: true, error: null };
+}
+
+export async function patchAccountTabRow<T extends AccountCrudTableName>(
+  table: T,
+  id: string,
+  patch: TablesUpdate<T>
+): Promise<TabInsertResult> {
+  const supabase = createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) {
+    return { success: false, error: authError.message };
+  }
+  if (!user) {
+    return {
+      success: false,
+      error: "You must be signed in to save changes. Please log in and try again.",
+    };
+  }
+
+  const updateError = await updateRowForTable(table, id, patch);
   if (updateError) {
     return { success: false, error: updateError };
   }
@@ -515,6 +598,21 @@ export async function deleteAccountTabRow<T extends AccountCrudTableName>(
   return { success: true, error: null };
 }
 
+export async function setSalesActivityFollowUpCompleted(
+  activityId: string,
+  completed: boolean
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("sales_activities")
+    .update({ follow_up_completed: completed })
+    .eq("id", activityId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function fetchAccountProjects(
   accountId: string
 ): Promise<AccountProjectsFetchResult> {
@@ -562,6 +660,101 @@ export async function fetchAccountTabRows<T extends AccountCrudTableName>(
 
   return {
     data: (result.data ?? []) as AccountCrudRow<T>[],
+    error: null,
+  };
+}
+
+export async function fetchAccountTabRowById<T extends AccountCrudTableName>(
+  table: T,
+  id: string
+): Promise<{ data: AccountCrudRow<T> | null; error: string | null }> {
+  const supabase = createClient();
+  let data: unknown = null;
+  let error: { message: string } | null = null;
+
+  switch (table) {
+    case "account_projects": {
+      const result = await supabase
+        .from("account_projects")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+      break;
+    }
+    case "sales_activities": {
+      const result = await supabase
+        .from("sales_activities")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+      break;
+    }
+    case "contact_persons": {
+      const result = await supabase
+        .from("contact_persons")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+      break;
+    }
+    case "products": {
+      const result = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+      break;
+    }
+    case "quotes": {
+      const result = await supabase
+        .from("quotes")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+      break;
+    }
+    case "marketing_materials": {
+      const result = await supabase
+        .from("marketing_materials")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+      break;
+    }
+    case "supply_chain": {
+      const result = await supabase
+        .from("supply_chain")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      data = result.data;
+      error = result.error;
+      break;
+    }
+    default: {
+      const _exhaustive: never = table;
+      return { data: null, error: `Unknown table: ${_exhaustive}` };
+    }
+  }
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return {
+    data: (data as AccountCrudRow<T> | null) ?? null,
     error: null,
   };
 }

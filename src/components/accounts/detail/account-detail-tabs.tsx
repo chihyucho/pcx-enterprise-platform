@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ACCOUNT_DETAIL_TABS } from "@/lib/schema/account-detail-tabs";
+import type { AccountDetailTabId } from "@/lib/schema/account-detail-tabs";
 import type { AccountTabTableName } from "@/lib/schema/account-detail-tabs";
 import type { AccountCrudTableName } from "@/types/tab-crud";
 import { BrandOverviewTab } from "@/components/accounts/detail/brand-overview-tab";
@@ -24,12 +25,14 @@ const CRUD_TABLE_MAP: Record<
 
 interface AccountDetailTabsProps {
   accountId: string;
+  initialTab?: AccountDetailTabId;
 }
 
-export function AccountDetailTabs({ accountId }: AccountDetailTabsProps) {
-  const [activeTab, setActiveTab] = useState(
-    ACCOUNT_DETAIL_TABS[0]?.id ?? "brand"
-  );
+export function AccountDetailTabs({
+  accountId,
+  initialTab = ACCOUNT_DETAIL_TABS[0]?.id ?? "brand",
+}: AccountDetailTabsProps) {
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   return (
     <Tabs

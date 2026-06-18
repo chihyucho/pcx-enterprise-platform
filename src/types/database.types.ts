@@ -399,10 +399,32 @@ export type Database = {
         }
         Relationships: []
       }
+      user_dashboard_reads: {
+        Row: {
+          item_id: string
+          item_type: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          item_id: string
+          item_type: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          item_id?: string
+          item_type?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           account_id: string | null
           compound: string | null
+          created_at: string | null
           created_by: string | null
           currency: string | null
           id: string
@@ -415,6 +437,7 @@ export type Database = {
         Insert: {
           account_id?: string | null
           compound?: string | null
+          created_at?: string | null
           created_by?: string | null
           currency?: string | null
           id?: string
@@ -427,6 +450,7 @@ export type Database = {
         Update: {
           account_id?: string | null
           compound?: string | null
+          created_at?: string | null
           created_by?: string | null
           currency?: string | null
           id?: string
@@ -461,6 +485,7 @@ export type Database = {
           contact_way: string | null
           created_at: string | null
           created_by: string | null
+          follow_up_completed: boolean
           id: string
           next_follow_up: string | null
           notes: string | null
@@ -474,6 +499,7 @@ export type Database = {
           contact_way?: string | null
           created_at?: string | null
           created_by?: string | null
+          follow_up_completed?: boolean
           id?: string
           next_follow_up?: string | null
           notes?: string | null
@@ -487,6 +513,7 @@ export type Database = {
           contact_way?: string | null
           created_at?: string | null
           created_by?: string | null
+          follow_up_completed?: boolean
           id?: string
           next_follow_up?: string | null
           notes?: string | null

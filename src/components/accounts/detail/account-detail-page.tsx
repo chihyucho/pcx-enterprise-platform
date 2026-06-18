@@ -1,17 +1,33 @@
 import Link from "next/link";
-import { Pencil } from "lucide-react";
-import { formatSourceLabel, stageBadgeVariant } from "@/lib/accounts/format";
 import { AccountDetailTabs } from "@/components/accounts/detail/account-detail-tabs";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { AccountDetailHeader } from "@/components/accounts/detail/account-detail-header";
 import { Separator } from "@/components/ui/separator";
-import type { AccountDetail } from "@/types/account";
+import type { AccountDetail, CategoryOption, StageOption } from "@/types/account";
+
+import type { AccountDetailTabId } from "@/lib/schema/account-detail-tabs";
+import { ACCOUNT_DETAIL_TABS } from "@/lib/schema/account-detail-tabs";
 
 interface AccountDetailPageProps {
   account: AccountDetail;
+  initialTab?: string;
+  categories: CategoryOption[];
+  stages: StageOption[];
 }
 
-export function AccountDetailPage({ account }: AccountDetailPageProps) {
+function resolveInitialTab(tab?: string): AccountDetailTabId {
+  if (!tab) {
+    return ACCOUNT_DETAIL_TABS[0]?.id ?? "brand";
+  }
+  const match = ACCOUNT_DETAIL_TABS.find((entry) => entry.id === tab);
+  return match?.id ?? ACCOUNT_DETAIL_TABS[0]?.id ?? "brand";
+}
+
+export function AccountDetailPage({
+  account,
+  initialTab,
+  categories,
+  stages,
+}: AccountDetailPageProps) {
   return (
     <div className="space-y-6">
       <div className="text-sm text-muted-foreground">
@@ -22,40 +38,18 @@ export function AccountDetailPage({ account }: AccountDetailPageProps) {
         <span>{account.brandName}</span>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-lg border bg-card p-6 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-2xl font-semibold tracking-tight">
-              {account.brandName}
-            </h2>
-            <Badge variant={stageBadgeVariant(account.stageName)}>
-              {account.stageName}
-            </Badge>
-          </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
-            <span>
-              <span className="font-medium text-foreground">Category:</span>{" "}
-              {account.categoryName}
-            </span>
-            <span>
-              <span className="font-medium text-foreground">Source:</span>{" "}
-              {formatSourceLabel(account.source)}
-            </span>
-            <span>
-              <span className="font-medium text-foreground">Created:</span>{" "}
-              {account.createdAt}
-            </span>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" disabled>
-          <Pencil className="h-4 w-4" />
-          Edit
-        </Button>
-      </div>
+      <AccountDetailHeader
+        account={account}
+        categories={categories}
+        stages={stages}
+      />
 
       <Separator />
 
-      <AccountDetailTabs accountId={account.id} />
+      <AccountDetailTabs
+        accountId={account.id}
+        initialTab={resolveInitialTab(initialTab)}
+      />
     </div>
   );
 }

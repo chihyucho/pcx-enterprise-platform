@@ -8,7 +8,10 @@ export interface AccountListItem {
   createdAt: string;
 }
 
-export type AccountDetail = AccountListItem;
+export interface AccountDetail extends AccountListItem {
+  businessCategoryId: string;
+  status: string;
+}
 
 /** Row from `public.stages` */
 export interface StageOption {

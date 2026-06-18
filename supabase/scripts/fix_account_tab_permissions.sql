@@ -12,6 +12,8 @@ alter table public.quotes add column if not exists notes text;
 alter table public.marketing_materials add column if not exists channel text;
 alter table public.marketing_materials add column if not exists description text;
 alter table public.marketing_materials add column if not exists approved_at timestamptz;
+alter table public.sales_activities add column if not exists follow_up_completed boolean not null default false;
+alter table public.quotes add column if not exists created_at timestamptz default now();
 alter table public.account_projects add column if not exists project_name text;
 
 alter table public.sales_activities add column if not exists project_id uuid references public.account_projects (id) on delete set null;
@@ -118,3 +120,22 @@ create policy "auth_insert_brand_overview" on public.brand_overview for insert t
 create policy "auth_update_brand_overview" on public.brand_overview for update to authenticated using (true) with check (true);
 create policy "auth_delete_brand_overview" on public.brand_overview for delete to authenticated using (true);
 grant select, insert, update, delete on public.brand_overview to authenticated;
+
+-- dashboard read tracking (per user)
+create table if not exists public.user_dashboard_reads (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  item_type text not null check (item_type in ('sales_activity', 'quote', 'product', 'marketing')),
+  item_id uuid not null,
+  read_at timestamptz not null default now(),
+  primary key (user_id, item_type, item_id)
+);
+alter table public.user_dashboard_reads enable row level security;
+drop policy if exists "users_select_own_dashboard_reads" on public.user_dashboard_reads;
+drop policy if exists "users_insert_own_dashboard_reads" on public.user_dashboard_reads;
+drop policy if exists "users_update_own_dashboard_reads" on public.user_dashboard_reads;
+drop policy if exists "users_delete_own_dashboard_reads" on public.user_dashboard_reads;
+create policy "users_select_own_dashboard_reads" on public.user_dashboard_reads for select to authenticated using (auth.uid() = user_id);
+create policy "users_insert_own_dashboard_reads" on public.user_dashboard_reads for insert to authenticated with check (auth.uid() = user_id);
+create policy "users_update_own_dashboard_reads" on public.user_dashboard_reads for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "users_delete_own_dashboard_reads" on public.user_dashboard_reads for delete to authenticated using (auth.uid() = user_id);
+grant select, insert, update, delete on public.user_dashboard_reads to authenticated;

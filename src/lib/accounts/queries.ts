@@ -92,7 +92,20 @@ export async function getAccountById(id: string): Promise<AccountQueryResult> {
   }
 
   return {
-    data: mapAccountRow(data) as AccountDetail,
+    data: mapAccountDetailRow(data),
     error: null,
+  };
+}
+
+function mapAccountDetailRow(
+  row: AccountWithRelationsSingle
+): AccountDetail {
+  const base = mapAccountRow(row);
+  return {
+    ...base,
+    brandName: row.brand_name,
+    source: row.source ?? "",
+    businessCategoryId: row.business_category_id ?? "",
+    status: row.status ?? "active",
   };
 }

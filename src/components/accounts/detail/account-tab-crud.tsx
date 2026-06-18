@@ -213,6 +213,8 @@ export function AccountTabCrud({
           onDelete={canDelete ? handleDelete : undefined}
           multilineKeys={getMultilineKeysForTable(table)}
           projects={projectScoped ? projects : []}
+          recordTable={table}
+          onInlineFieldChange={() => void reload()}
         />
       ) : null}
     </>

@@ -24,7 +24,24 @@ import { rowToFormValues } from "@/lib/accounts/row-form-values";
 import type { AccountProjectRow } from "@/lib/accounts/project-utils";
 import type { TabColumnDef } from "@/lib/schema/tab-columns";
 import type { TabFormFieldDef } from "@/lib/schema/tab-form-fields";
+import { SalesActivityFollowUpField } from "@/components/accounts/detail/sales-activity-follow-up-field";
+import { InlineApprovalStatusSelect } from "@/components/accounts/detail/inline-approval-status-select";
 import { RECORD_DETAIL_DIALOG_CLASS } from "@/lib/ui/dialog-sizes";
+import {
+  MARKETING_APPROVAL_STATUS_OPTIONS,
+  PRODUCT_APPROVAL_STATUS_OPTIONS,
+} from "@/lib/schema/field-options";
+import type { AccountCrudTableName } from "@/types/tab-crud";
+
+function isInlineApprovalStatusColumn(
+  recordTable: AccountCrudTableName | undefined,
+  columnKey: string
+): boolean {
+  return (
+    (recordTable === "products" && columnKey === "approval_status") ||
+    (recordTable === "marketing_materials" && columnKey === "status")
+  );
+}
 
 interface RecordDetailDialogProps {
   open: boolean;
@@ -45,6 +62,8 @@ interface RecordDetailDialogProps {
   }>;
   multilineKeys?: string[];
   projects?: AccountProjectRow[];
+  recordTable?: AccountCrudTableName;
+  onInlineFieldChange?: () => void;
 }
 
 export function RecordDetailDialog({
@@ -60,14 +79,36 @@ export function RecordDetailDialog({
   onDelete,
   multilineKeys = ["notes"],
   projects = [],
+  recordTable,
+  onInlineFieldChange,
 }: RecordDetailDialogProps) {
   const showProjectSelect = projects.length > 0;
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [followUpCompleted, setFollowUpCompleted] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState("");
   const [values, setValues] = useState<Record<string, string>>(() =>
     rowToFormValues(row, fields, { includeProjectId: showProjectSelect })
   );
   const [formError, setFormError] = useState<string | null>(null);
+
+  const activityId =
+    recordTable === "sales_activities" ? String(row.id ?? "") : "";
+  const showFollowUpCheckbox =
+    recordTable === "sales_activities" &&
+    row.next_follow_up != null &&
+    String(row.next_follow_up).trim() !== "";
+  const recordId = String(row.id ?? "");
+  const inlineApprovalTable =
+    recordTable === "products" || recordTable === "marketing_materials"
+      ? recordTable
+      : null;
+  const inlineApprovalFieldName =
+    recordTable === "products"
+      ? ("approval_status" as const)
+      : recordTable === "marketing_materials"
+        ? ("status" as const)
+        : null;
 
   useEffect(() => {
     if (open) {
@@ -77,8 +118,12 @@ export function RecordDetailDialog({
       setIsEditing(false);
       setConfirmDeleteOpen(false);
       setFormError(null);
+      setFollowUpCompleted(Boolean(row.follow_up_completed));
+      if (inlineApprovalFieldName) {
+        setApprovalStatus(String(row[inlineApprovalFieldName] ?? ""));
+      }
     }
-  }, [open, row, fields, showProjectSelect]);
+  }, [open, row, fields, showProjectSelect, inlineApprovalFieldName]);
 
   function handleOpenChange(next: boolean) {
     if (!next) {
@@ -218,13 +263,34 @@ export function RecordDetailDialog({
               </DialogFooter>
             </form>
           ) : (
-            <div className="px-6 py-5">
+            <div className="space-y-4 px-6 py-5">
+              {showFollowUpCheckbox ? (
+                <SalesActivityFollowUpField
+                  activityId={activityId}
+                  completed={followUpCompleted}
+                  disabled={submitting}
+                  onCompletedChange={(completed) => {
+                    setFollowUpCompleted(completed);
+                    onInlineFieldChange?.();
+                  }}
+                  onError={setFormError}
+                />
+              ) : null}
+              {formError && !isEditing ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {formError}
+                </p>
+              ) : null}
               <Table className="table-fixed w-full">
                 <TableBody>
                   {viewColumns.map((col) => {
                     const value = row[col.key];
                     const display = formatCellValue(col.key, value);
                     const isMultiline = multilineKeys.includes(col.key);
+                    const showInlineApproval =
+                      inlineApprovalTable &&
+                      inlineApprovalFieldName &&
+                      isInlineApprovalStatusColumn(recordTable, col.key);
 
                     return (
                       <TableRow key={col.key}>
@@ -238,7 +304,25 @@ export function RecordDetailDialog({
                               : "break-words"
                           }`}
                         >
-                          {display}
+                          {showInlineApproval ? (
+                            <InlineApprovalStatusSelect
+                              recordId={recordId}
+                              table={inlineApprovalTable}
+                              fieldName={inlineApprovalFieldName}
+                              value={approvalStatus}
+                              options={
+                                inlineApprovalTable === "products"
+                                  ? PRODUCT_APPROVAL_STATUS_OPTIONS
+                                  : MARKETING_APPROVAL_STATUS_OPTIONS
+                              }
+                              disabled={submitting}
+                              onValueChange={setApprovalStatus}
+                              onSaved={onInlineFieldChange}
+                              onError={setFormError}
+                            />
+                          ) : (
+                            display
+                          )}
                         </TableCell>
                       </TableRow>
                     );

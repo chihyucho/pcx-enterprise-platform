@@ -34,6 +34,11 @@ export const TAB_FORM_FIELDS: Record<AccountCrudTableName, TabFormFieldDef[]> = 
       options: CONTACT_WAY_OPTIONS,
     },
     { name: "next_follow_up", label: "Next Follow-up", type: "date" },
+    {
+      name: "follow_up_completed",
+      label: "Follow-up completed",
+      type: "boolean",
+    },
     { name: "notes", label: "Notes", type: "textarea" },
   ],
   contact_persons: [

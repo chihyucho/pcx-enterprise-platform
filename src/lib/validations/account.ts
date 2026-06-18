@@ -11,3 +11,9 @@ export const createAccountSchema = z.object({
 });
 
 export type CreateAccountFormValues = z.infer<typeof createAccountSchema>;
+
+export const updateAccountSchema = createAccountSchema.extend({
+  accountId: z.string().uuid("Invalid account id"),
+});
+
+export type UpdateAccountFormValues = z.infer<typeof updateAccountSchema>;
