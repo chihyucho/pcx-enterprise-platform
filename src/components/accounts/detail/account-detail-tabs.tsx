@@ -1,0 +1,80 @@
+"use client";
+
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ACCOUNT_DETAIL_TABS } from "@/lib/schema/account-detail-tabs";
+import type { AccountDetailTabId } from "@/lib/schema/account-detail-tabs";
+import type { AccountTabTableName } from "@/lib/schema/account-detail-tabs";
+import type { AccountCrudTableName } from "@/types/tab-crud";
+import { BrandOverviewTab } from "@/components/accounts/detail/brand-overview-tab";
+import { AccountTabCrud } from "@/components/accounts/detail/account-tab-crud";
+import { ProjectDetailTab } from "@/components/accounts/detail/project-detail-tab";
+
+const CRUD_TABLE_MAP: Record<
+  Exclude<AccountTabTableName, never>,
+  AccountCrudTableName
+> = {
+  account_projects: "account_projects",
+  sales_activities: "sales_activities",
+  contact_persons: "contact_persons",
+  products: "products",
+  quotes: "quotes",
+  marketing_materials: "marketing_materials",
+  supply_chain: "supply_chain",
+};
+
+interface AccountDetailTabsProps {
+  accountId: string;
+  initialTab?: AccountDetailTabId;
+}
+
+export function AccountDetailTabs({
+  accountId,
+  initialTab = ACCOUNT_DETAIL_TABS[0]?.id ?? "brand",
+}: AccountDetailTabsProps) {
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  return (
+    <Tabs
+      value={activeTab}
+      onValueChange={setActiveTab}
+      className="w-full space-y-4"
+    >
+      <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-muted/50 p-1">
+        {ACCOUNT_DETAIL_TABS.map((tab) => (
+          <TabsTrigger
+            key={tab.id}
+            value={tab.id}
+            className="text-xs sm:text-sm"
+          >
+            {tab.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+
+      {ACCOUNT_DETAIL_TABS.map((tab) => (
+        <TabsContent key={tab.id} value={tab.id} className="mt-0">
+          {tab.kind === "account" ? (
+            <BrandOverviewTab
+              accountId={accountId}
+              enabled={activeTab === tab.id}
+            />
+          ) : tab.id === "project" ? (
+            <ProjectDetailTab
+              accountId={accountId}
+              title={tab.label}
+              enabled={activeTab === tab.id}
+            />
+          ) : (
+            <AccountTabCrud
+              accountId={accountId}
+              table={CRUD_TABLE_MAP[tab.table]}
+              title={tab.label}
+              enabled={activeTab === tab.id}
+            />
+          )}
+        </TabsContent>
+      ))}
+    </Tabs>
+  );
+}
