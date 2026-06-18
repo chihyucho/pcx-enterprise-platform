@@ -2,6 +2,7 @@
 
 import {
   Building2,
+  CalendarClock,
   CalendarDays,
   FileText,
   LayoutDashboard,
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 
 const ICON_MAP: Record<NavIconName, LucideIcon> = {
   "layout-dashboard": LayoutDashboard,
+  "calendar-clock": CalendarClock,
   "building-2": Building2,
   "calendar-days": CalendarDays,
   "file-text": FileText,

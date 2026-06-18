@@ -35,13 +35,48 @@ async function fetchReadIds(
   return new Set((data ?? []).map((row) => row.item_id));
 }
 
+function mapFollowUpRows(
+  rows: {
+    id: string;
+    subject: string | null;
+    next_follow_up: string | null;
+    account_id: string | null;
+    accounts: AccountJoin;
+  }[]
+): FollowUpItem[] {
+  return rows
+    .filter((row) => row.next_follow_up)
+    .map((row) => ({
+      id: row.id,
+      subject: row.subject,
+      nextFollowUp: row.next_follow_up as string,
+      accountId: row.account_id,
+      accountName: accountName(row.accounts),
+    }));
+}
+
+export async function fetchFollowUps(): Promise<FollowUpItem[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("sales_activities")
+    .select("id, subject, next_follow_up, account_id, accounts(brand_name)")
+    .eq("follow_up_completed", false)
+    .not("next_follow_up", "is", null)
+    .order("next_follow_up", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return mapFollowUpRows(data ?? []);
+}
+
 export async function fetchDashboardData(
   userId: string
 ): Promise<DashboardData> {
   const supabase = createClient();
 
   const [
-    followUpsResult,
     activitiesResult,
     quotesResult,
     productsResult,
@@ -49,12 +84,6 @@ export async function fetchDashboardData(
     activityReadIds,
     quoteReadIds,
   ] = await Promise.all([
-    supabase
-      .from("sales_activities")
-      .select("id, subject, next_follow_up, account_id, accounts(brand_name)")
-      .eq("follow_up_completed", false)
-      .not("next_follow_up", "is", null)
-      .order("next_follow_up", { ascending: true }),
     supabase
       .from("sales_activities")
       .select("id, subject, created_at, account_id, accounts(brand_name)")
@@ -82,7 +111,6 @@ export async function fetchDashboardData(
   ]);
 
   const errors = [
-    followUpsResult.error,
     activitiesResult.error,
     quotesResult.error,
     productsResult.error,
@@ -92,16 +120,6 @@ export async function fetchDashboardData(
   if (errors.length > 0) {
     throw new Error(errors[0]?.message ?? "Failed to load dashboard");
   }
-
-  const followUps: FollowUpItem[] = (followUpsResult.data ?? [])
-    .filter((row) => row.next_follow_up)
-    .map((row) => ({
-      id: row.id,
-      subject: row.subject,
-      nextFollowUp: row.next_follow_up as string,
-      accountId: row.account_id,
-      accountName: accountName(row.accounts as AccountJoin),
-    }));
 
   const newActivities: UnreadActivityItem[] = (activitiesResult.data ?? [])
     .filter((row) => row.created_at && !activityReadIds.has(row.id))
@@ -153,7 +171,6 @@ export async function fetchDashboardData(
   );
 
   return {
-    followUps,
     newActivities,
     newQuotes,
     pendingApprovals,

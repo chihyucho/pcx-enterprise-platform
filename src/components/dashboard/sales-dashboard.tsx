@@ -2,13 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { formatAccountDate } from "@/lib/accounts/format";
-import {
-  fetchDashboardData,
-  markFollowUpComplete,
-} from "@/lib/dashboard/client";
-import {
-  formatApprovalStatusLabel,
-} from "@/lib/dashboard/format";
+import { fetchDashboardData } from "@/lib/dashboard/client";
+import { formatApprovalStatusLabel } from "@/lib/dashboard/format";
 import type {
   DashboardData,
   DashboardDismissKind,
@@ -28,7 +23,6 @@ function DashboardList({ children }: { children: React.ReactNode }) {
 
 function removeItemById(data: DashboardData, itemId: string): DashboardData {
   return {
-    followUps: data.followUps.filter((item) => item.id !== itemId),
     newActivities: data.newActivities.filter((item) => item.id !== itemId),
     newQuotes: data.newQuotes.filter((item) => item.id !== itemId),
     pendingApprovals: data.pendingApprovals.filter((item) => item.id !== itemId),
@@ -41,11 +35,6 @@ function removeDismissedItem(
   itemId: string
 ): DashboardData {
   switch (kind) {
-    case "follow_up":
-      return {
-        ...data,
-        followUps: data.followUps.filter((item) => item.id !== itemId),
-      };
     case "sales_activity":
       return {
         ...data,
@@ -80,7 +69,6 @@ export function SalesDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [recordTarget, setRecordTarget] = useState<DashboardRecordTarget | null>(
     null
   );
@@ -129,26 +117,12 @@ export function SalesDashboard() {
     setRecordTarget(target);
   };
 
-  const handleFollowUpCheck = async (activityId: string) => {
-    setUpdatingId(activityId);
-    try {
-      await markFollowUpComplete(activityId);
-      handleDismissed("follow_up", activityId);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update follow-up"
-      );
-    } finally {
-      setUpdatingId(null);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Dashboard</h2>
         <p className="text-sm text-muted-foreground">
-          Follow-ups, new items, and pending approvals across your pipeline.
+          New items and pending approvals across your pipeline.
         </p>
       </div>
 
@@ -159,45 +133,6 @@ export function SalesDashboard() {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <DashboardSection
-          title="Follow up"
-          description="Sales activities with a next follow-up date that are not yet completed."
-          isLoading={loading}
-          isEmpty={!loading && (data?.followUps.length ?? 0) === 0}
-          emptyMessage="No follow-ups due."
-        >
-          <DashboardList>
-            {data?.followUps.map((item) => (
-              <DashboardListRow
-                key={item.id}
-                title={item.subject?.trim() || "Sales activity"}
-                meta={`Follow up: ${formatAccountDate(item.nextFollowUp)}`}
-                accountId={item.accountId}
-                accountName={item.accountName}
-                accountTab="sales_activities"
-                disabled={!item.accountId || updatingId === item.id}
-                leading={
-                  <input
-                    type="checkbox"
-                    className="mt-1 h-4 w-4 rounded border-input"
-                    aria-label={`Mark follow-up complete for ${item.subject ?? "activity"}`}
-                    disabled={updatingId === item.id}
-                    onChange={() => void handleFollowUpCheck(item.id)}
-                  />
-                }
-                onTitleClick={() =>
-                  item.accountId &&
-                  openRecord({
-                    table: "sales_activities",
-                    rowId: item.id,
-                    accountId: item.accountId,
-                  })
-                }
-              />
-            ))}
-          </DashboardList>
-        </DashboardSection>
-
         <DashboardSection
           title="New Sales Activities"
           description="Recently added activities you have not opened yet."

@@ -7,6 +7,11 @@ export const SALES_NAV_ITEMS: NavItem[] = [
     icon: "layout-dashboard",
   },
   {
+    title: "Follow up",
+    href: "/sales-system/follow-ups",
+    icon: "calendar-clock",
+  },
+  {
     title: "Accounts",
     href: "/sales-system/accounts",
     icon: "building-2",

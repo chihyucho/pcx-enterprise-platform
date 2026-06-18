@@ -48,7 +48,6 @@ export type PendingApprovalItem = {
 };
 
 export type DashboardData = {
-  followUps: FollowUpItem[];
   newActivities: UnreadActivityItem[];
   newQuotes: UnreadQuoteItem[];
   pendingApprovals: PendingApprovalItem[];
