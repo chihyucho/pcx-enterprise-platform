@@ -37,7 +37,6 @@ export const TAB_COLUMNS: Record<AccountTabTableName, TabColumnDef[]> = {
     { key: "subject", label: "Subject" },
     { key: "activity_date", label: "Activity Date" },
     { key: "contact_way", label: "Contact Way" },
-    { key: "next_follow_up", label: "Next Follow-up" },
     { key: "notes", label: "Notes" },
     { key: "created_at", label: "Created" },
   ],
@@ -89,7 +88,6 @@ export const SALES_ACTIVITY_DETAIL_FIELDS: TabColumnDef[] = [
   { key: "subject", label: "Subject" },
   { key: "activity_date", label: "Activity Date" },
   { key: "contact_way", label: "Contact Way" },
-  { key: "next_follow_up", label: "Next Follow-up" },
   { key: "notes", label: "Notes" },
   { key: "created_at", label: "Created" },
 ];

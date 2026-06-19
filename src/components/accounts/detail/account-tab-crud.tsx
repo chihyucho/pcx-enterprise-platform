@@ -17,6 +17,8 @@ import {
   getRecordDetailTitle,
   isDeletableAccountTabTable,
 } from "@/lib/accounts/record-detail";
+import type { FollowUpDraft } from "@/lib/follow-ups/draft";
+import { createFollowUpDrafts } from "@/lib/follow-ups/client";
 import type { AccountCrudTableName } from "@/types/tab-crud";
 import type { Tables } from "@/types/database.types";
 import { AccountDataTable } from "@/components/accounts/detail/account-data-table";
@@ -114,6 +116,32 @@ export function AccountTabCrud({
     setDetailOpen(true);
   }
 
+  async function handleCreate(
+    values: Record<string, string>,
+    followUpDrafts: FollowUpDraft[]
+  ) {
+    const result = await create(values);
+    if (!result.success) {
+      return result;
+    }
+
+    if (table === "sales_activities" && result.id && followUpDrafts.length > 0) {
+      try {
+        await createFollowUpDrafts(result.id, accountId, followUpDrafts);
+      } catch (err) {
+        return {
+          success: false as const,
+          error:
+            err instanceof Error
+              ? err.message
+              : "Activity created but follow-ups failed to save.",
+        };
+      }
+    }
+
+    return result;
+  }
+
   async function handleUpdate(values: Record<string, string>) {
     if (!selectedRow) {
       return { success: false, error: "No record selected." };
@@ -191,10 +219,11 @@ export function AccountTabCrud({
         onOpenChange={setCreateOpen}
         title={title}
         tableName={table}
+        recordTable={table}
         accountId={accountId}
         fields={formFields}
         submitting={submitting}
-        onSubmit={create}
+        onSubmit={handleCreate}
         projects={projectScoped ? projects : []}
         defaultProjectId={projectScoped ? defaultCreateProjectId : null}
       />

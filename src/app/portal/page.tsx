@@ -1,19 +1,17 @@
-import { createClient } from "@/lib/supabase/server";
 import { TopNavbar } from "@/components/layout/top-navbar";
 import { MainContent } from "@/components/layout/main-content";
 import { ModuleCard } from "@/components/portal/module-card";
+import { getUserDisplayInfo, userDisplayLabel } from "@/lib/auth/user";
 import { PORTAL_MODULES } from "@/lib/navigation/portal-modules";
 
 export default async function PortalPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUserDisplayInfo();
 
   return (
     <div className="flex min-h-screen flex-col">
       <TopNavbar
         title="Portal"
+        userName={user ? userDisplayLabel(user) : null}
         userEmail={user?.email}
         showPortalLink={false}
       />

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { LogOut, User } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -15,66 +14,55 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface UserMenuProps {
+  userName?: string | null;
   userEmail?: string | null;
-  showPortalLink?: boolean;
 }
 
-function UserMenuButton() {
-  return (
-    <Button variant="ghost" size="icon" className="rounded-full">
-      <User className="h-4 w-4" />
-      <span className="sr-only">User menu</span>
-    </Button>
-  );
-}
-
-export function UserMenu({
-  userEmail,
-  showPortalLink = true,
-}: UserMenuProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <UserMenuButton />;
-  }
+export function UserMenu({ userName, userEmail }: UserMenuProps) {
+  const displayName = userName?.trim() || userEmail?.trim() || "Account";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <UserMenuButton />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
+          aria-label="Open user menu"
+        >
+          <User className="h-4 w-4" />
+        </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="z-[100] w-56">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">Account</p>
-            <p className="text-xs text-muted-foreground">
-              {userEmail ?? "Signed in"}
-            </p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
+            {userEmail ? (
+              <p className="text-xs text-muted-foreground">{userEmail}</p>
+            ) : null}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {showPortalLink ? (
-          <DropdownMenuItem asChild>
-            <Link href="/portal">Portal</Link>
-          </DropdownMenuItem>
-        ) : null}
-        <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <form action={signOut} className="w-full">
-            <button
-              type="submit"
-              className="flex w-full cursor-pointer items-center text-sm"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign out
-            </button>
-          </form>
+          <Link href="/profile">Profile</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onSelect={(event) => {
+            event.preventDefault();
+            const form = document.getElementById(
+              "user-menu-sign-out-form"
+            ) as HTMLFormElement | null;
+            form?.requestSubmit();
+          }}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
+      <form id="user-menu-sign-out-form" action={signOut} className="hidden" />
     </DropdownMenu>
   );
 }

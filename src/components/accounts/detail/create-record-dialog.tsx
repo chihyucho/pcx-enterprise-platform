@@ -12,20 +12,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { RecordFormFields } from "@/components/accounts/detail/record-form-fields";
 import { ProjectSelectField } from "@/components/accounts/detail/project-select-field";
+import { SalesActivityFollowUpDraftsSection } from "@/components/accounts/detail/sales-activity-follow-up-drafts-section";
 import { emptyFormValues } from "@/lib/accounts/row-form-values";
 import type { AccountProjectRow } from "@/lib/accounts/project-utils";
 import type { TabFormFieldDef } from "@/lib/schema/tab-form-fields";
+import type { FollowUpDraft } from "@/lib/follow-ups/draft";
 import { RECORD_FORM_DIALOG_CLASS } from "@/lib/ui/dialog-sizes";
+import type { AccountCrudTableName } from "@/types/tab-crud";
 
 interface CreateRecordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   tableName: string;
+  recordTable?: AccountCrudTableName;
   accountId: string;
   fields: TabFormFieldDef[];
   submitting: boolean;
-  onSubmit: (values: Record<string, string>) => Promise<{
+  onSubmit: (
+    values: Record<string, string>,
+    followUpDrafts: FollowUpDraft[]
+  ) => Promise<{
     success: boolean;
     error: string | null;
   }>;
@@ -49,6 +56,7 @@ export function CreateRecordDialog({
   onOpenChange,
   title,
   tableName,
+  recordTable,
   accountId,
   fields,
   submitting,
@@ -57,14 +65,17 @@ export function CreateRecordDialog({
   defaultProjectId = null,
 }: CreateRecordDialogProps) {
   const showProjectSelect = projects.length > 0;
+  const showFollowUpDrafts = recordTable === "sales_activities";
   const [values, setValues] = useState<Record<string, string>>(() =>
     buildInitialValues(fields, defaultProjectId)
   );
+  const [followUpDrafts, setFollowUpDrafts] = useState<FollowUpDraft[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setValues(buildInitialValues(fields, defaultProjectId));
+      setFollowUpDrafts([]);
       setFormError(null);
     }
   }, [open, fields, defaultProjectId]);
@@ -72,6 +83,7 @@ export function CreateRecordDialog({
   function handleOpenChange(next: boolean) {
     if (!next) {
       setValues(buildInitialValues(fields, defaultProjectId));
+      setFollowUpDrafts([]);
       setFormError(null);
     }
     onOpenChange(next);
@@ -97,13 +109,14 @@ export function CreateRecordDialog({
       }
     }
 
-    const result = await onSubmit(values);
+    const result = await onSubmit(values, followUpDrafts);
     if (!result.success) {
       setFormError(result.error ?? "Failed to create record.");
       return;
     }
 
     setValues(buildInitialValues(fields, defaultProjectId));
+    setFollowUpDrafts([]);
     onOpenChange(false);
   }
 
@@ -130,6 +143,14 @@ export function CreateRecordDialog({
             values={values}
             onChange={updateField}
           />
+          {showFollowUpDrafts ? (
+            <SalesActivityFollowUpDraftsSection
+              drafts={followUpDrafts}
+              onDraftsChange={setFollowUpDrafts}
+              disabled={submitting}
+              onError={setFormError}
+            />
+          ) : null}
           {formError ? (
             <p className="text-sm text-destructive" role="alert">
               {formError}

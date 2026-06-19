@@ -1,15 +1,22 @@
-import { setSalesActivityFollowUpCompleted } from "@/lib/accounts/tab-client";
+import {
+  fetchFollowUpsForUser,
+  markFollowUpItemComplete,
+} from "@/lib/follow-ups/client";
+import type { FollowUpItem } from "@/lib/follow-ups/types";
 import { createClient } from "@/lib/supabase/client";
 import { PENDING_APPROVAL_STATUSES } from "@/lib/dashboard/types";
 import type {
   DashboardData,
   DashboardDismissKind,
   DashboardReadItemType,
-  FollowUpItem,
   PendingApprovalItem,
   UnreadActivityItem,
   UnreadQuoteItem,
 } from "@/lib/dashboard/types";
+
+export type { FollowUpItem } from "@/lib/follow-ups/types";
+export { fetchFollowUpsForUser as fetchFollowUps } from "@/lib/follow-ups/client";
+export { markFollowUpItemComplete as markFollowUpComplete } from "@/lib/follow-ups/client";
 
 type AccountJoin = { brand_name: string } | null;
 
@@ -33,42 +40,6 @@ async function fetchReadIds(
   }
 
   return new Set((data ?? []).map((row) => row.item_id));
-}
-
-function mapFollowUpRows(
-  rows: {
-    id: string;
-    subject: string | null;
-    next_follow_up: string | null;
-    account_id: string | null;
-    accounts: AccountJoin;
-  }[]
-): FollowUpItem[] {
-  return rows
-    .filter((row) => row.next_follow_up)
-    .map((row) => ({
-      id: row.id,
-      subject: row.subject,
-      nextFollowUp: row.next_follow_up as string,
-      accountId: row.account_id,
-      accountName: accountName(row.accounts),
-    }));
-}
-
-export async function fetchFollowUps(): Promise<FollowUpItem[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("sales_activities")
-    .select("id, subject, next_follow_up, account_id, accounts(brand_name)")
-    .eq("follow_up_completed", false)
-    .not("next_follow_up", "is", null)
-    .order("next_follow_up", { ascending: true });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return mapFollowUpRows(data ?? []);
 }
 
 export async function fetchDashboardData(
@@ -177,17 +148,13 @@ export async function fetchDashboardData(
   };
 }
 
-export async function markFollowUpComplete(activityId: string): Promise<void> {
-  await setSalesActivityFollowUpCompleted(activityId, true);
-}
-
 export async function dismissDashboardItem(
   userId: string,
   kind: DashboardDismissKind,
   itemId: string
 ): Promise<void> {
   if (kind === "follow_up") {
-    await markFollowUpComplete(itemId);
+    await markFollowUpItemComplete(itemId, true);
     return;
   }
   await markDashboardItemRead(userId, kind, itemId);

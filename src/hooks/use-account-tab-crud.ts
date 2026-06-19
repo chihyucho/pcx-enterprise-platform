@@ -68,7 +68,7 @@ export function useAccountTabCrud<T extends AccountCrudTableName>(
 
       await load();
       setState((prev) => ({ ...prev, submitting: false }));
-      return { success: true as const, error: null };
+      return { success: true as const, error: null, id: result.id };
     },
     [table, accountId, load]
   );

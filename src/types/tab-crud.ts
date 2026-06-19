@@ -18,5 +18,5 @@ export type TabFetchResult<T extends AccountCrudTableName> =
   | { data: null; error: string };
 
 export type TabInsertResult =
-  | { success: true; error: null }
+  | { success: true; error: null; id?: string }
   | { success: false; error: string };

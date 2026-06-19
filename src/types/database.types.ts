@@ -372,6 +372,57 @@ export type Database = {
           },
         ]
       }
+      follow_up_items: {
+        Row: {
+          account_id: string
+          assigned_user_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          sales_activity_id: string
+        }
+        Insert: {
+          account_id: string
+          assigned_user_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          sales_activity_id: string
+        }
+        Update: {
+          account_id?: string
+          assigned_user_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          sales_activity_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_items_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_items_sales_activity_id_fkey"
+            columns: ["sales_activity_id"]
+            isOneToOne: false
+            referencedRelation: "sales_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null

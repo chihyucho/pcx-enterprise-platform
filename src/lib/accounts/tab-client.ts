@@ -327,41 +327,69 @@ async function fetchRowsForTable(
 async function insertRowForTable<T extends AccountCrudTableName>(
   table: T,
   payload: AccountCrudInsert<T>
-): Promise<string | null> {
+): Promise<{ error: string | null; id?: string }> {
   const supabase = createClient();
 
   switch (table) {
     case "account_projects": {
-      const { error } = await supabase.from("account_projects").insert(payload as AccountCrudInsert<"account_projects">);
-      return error?.message ?? null;
+      const { data, error } = await supabase
+        .from("account_projects")
+        .insert(payload as AccountCrudInsert<"account_projects">)
+        .select("id")
+        .single();
+      return { error: error?.message ?? null, id: data?.id };
     }
     case "sales_activities": {
-      const { error } = await supabase.from("sales_activities").insert(payload as AccountCrudInsert<"sales_activities">);
-      return error?.message ?? null;
+      const { data, error } = await supabase
+        .from("sales_activities")
+        .insert(payload as AccountCrudInsert<"sales_activities">)
+        .select("id")
+        .single();
+      return { error: error?.message ?? null, id: data?.id };
     }
     case "contact_persons": {
-      const { error } = await supabase.from("contact_persons").insert(payload as AccountCrudInsert<"contact_persons">);
-      return error?.message ?? null;
+      const { data, error } = await supabase
+        .from("contact_persons")
+        .insert(payload as AccountCrudInsert<"contact_persons">)
+        .select("id")
+        .single();
+      return { error: error?.message ?? null, id: data?.id };
     }
     case "products": {
-      const { error } = await supabase.from("products").insert(payload as AccountCrudInsert<"products">);
-      return error?.message ?? null;
+      const { data, error } = await supabase
+        .from("products")
+        .insert(payload as AccountCrudInsert<"products">)
+        .select("id")
+        .single();
+      return { error: error?.message ?? null, id: data?.id };
     }
     case "quotes": {
-      const { error } = await supabase.from("quotes").insert(payload as AccountCrudInsert<"quotes">);
-      return error?.message ?? null;
+      const { data, error } = await supabase
+        .from("quotes")
+        .insert(payload as AccountCrudInsert<"quotes">)
+        .select("id")
+        .single();
+      return { error: error?.message ?? null, id: data?.id };
     }
     case "marketing_materials": {
-      const { error } = await supabase.from("marketing_materials").insert(payload as AccountCrudInsert<"marketing_materials">);
-      return error?.message ?? null;
+      const { data, error } = await supabase
+        .from("marketing_materials")
+        .insert(payload as AccountCrudInsert<"marketing_materials">)
+        .select("id")
+        .single();
+      return { error: error?.message ?? null, id: data?.id };
     }
     case "supply_chain": {
-      const { error } = await supabase.from("supply_chain").insert(payload as AccountCrudInsert<"supply_chain">);
-      return error?.message ?? null;
+      const { data, error } = await supabase
+        .from("supply_chain")
+        .insert(payload as AccountCrudInsert<"supply_chain">)
+        .select("id")
+        .single();
+      return { error: error?.message ?? null, id: data?.id };
     }
     default: {
       const _exhaustive: never = table;
-      return `Unknown table: ${_exhaustive}`;
+      return { error: `Unknown table: ${_exhaustive}` };
     }
   }
 }
@@ -598,21 +626,6 @@ export async function deleteAccountTabRow<T extends AccountCrudTableName>(
   return { success: true, error: null };
 }
 
-export async function setSalesActivityFollowUpCompleted(
-  activityId: string,
-  completed: boolean
-): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("sales_activities")
-    .update({ follow_up_completed: completed })
-    .eq("id", activityId);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-}
-
 export async function fetchAccountProjects(
   accountId: string
 ): Promise<AccountProjectsFetchResult> {
@@ -780,11 +793,11 @@ export async function insertAccountTabRow<T extends AccountCrudTableName>(
   }
 
   const payload = buildInsertPayload(table, accountId, values, fields, user.id);
-  const insertError = await insertRowForTable(table, payload);
+  const insertResult = await insertRowForTable(table, payload);
 
-  if (insertError) {
-    return { success: false, error: insertError };
+  if (insertResult.error) {
+    return { success: false, error: insertResult.error };
   }
 
-  return { success: true, error: null };
+  return { success: true, error: null, id: insertResult.id };
 }

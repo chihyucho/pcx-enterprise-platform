@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatAccountDate } from "@/lib/accounts/format";
 import { fetchFollowUps, markFollowUpComplete } from "@/lib/dashboard/client";
-import type { FollowUpItem } from "@/lib/dashboard/types";
+import type { FollowUpItem } from "@/lib/follow-ups/types";
 import { createClient } from "@/lib/supabase/client";
 import { DashboardListRow } from "@/components/dashboard/dashboard-list-row";
 import {
@@ -11,9 +11,16 @@ import {
   type DashboardRecordTarget,
 } from "@/components/dashboard/dashboard-record-dialog";
 import { DashboardSection } from "@/components/dashboard/dashboard-section";
+import { FollowUpUndoBar } from "@/components/follow-ups/follow-up-undo-bar";
+
+const UNDO_DURATION_MS = 5000;
 
 function FollowUpList({ children }: { children: React.ReactNode }) {
   return <ul className="divide-y rounded-md border">{children}</ul>;
+}
+
+function sortFollowUps(items: FollowUpItem[]): FollowUpItem[] {
+  return [...items].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 }
 
 export function FollowUpsPage() {
@@ -22,15 +29,25 @@ export function FollowUpsPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [undoItem, setUndoItem] = useState<FollowUpItem | null>(null);
+  const [undoing, setUndoing] = useState(false);
   const [recordTarget, setRecordTarget] = useState<DashboardRecordTarget | null>(
     null
   );
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const load = useCallback(async () => {
+  const clearUndoTimer = useCallback(() => {
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+  }, []);
+
+  const load = useCallback(async (uid: string) => {
     setLoading(true);
     setError(null);
     try {
-      const next = await fetchFollowUps();
+      const next = await fetchFollowUps(uid);
       setFollowUps(next);
     } catch (err) {
       setError(
@@ -50,35 +67,76 @@ export function FollowUpsPage() {
         return;
       }
       setUserId(user.id);
-      void load();
+      void load(user.id);
     });
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      clearUndoTimer();
+    };
+  }, [clearUndoTimer]);
 
   const openRecord = (target: DashboardRecordTarget) => {
     if (!target.accountId) return;
     setRecordTarget(target);
   };
 
-  const handleFollowUpCheck = async (activityId: string) => {
-    setUpdatingId(activityId);
+  function scheduleUndoDismiss() {
+    clearUndoTimer();
+    undoTimeoutRef.current = setTimeout(() => {
+      setUndoItem(null);
+      undoTimeoutRef.current = null;
+    }, UNDO_DURATION_MS);
+  }
+
+  async function handleFollowUpCheck(item: FollowUpItem) {
+    setUpdatingId(item.id);
+    setError(null);
+
+    setFollowUps((current) => current.filter((entry) => entry.id !== item.id));
+
     try {
-      await markFollowUpComplete(activityId);
-      setFollowUps((current) => current.filter((item) => item.id !== activityId));
+      await markFollowUpComplete(item.id, true);
+      clearUndoTimer();
+      setUndoItem(item);
+      scheduleUndoDismiss();
     } catch (err) {
+      setFollowUps((current) => sortFollowUps([...current, item]));
       setError(
         err instanceof Error ? err.message : "Failed to update follow-up"
       );
     } finally {
       setUpdatingId(null);
     }
-  };
+  }
+
+  async function handleUndo() {
+    if (!undoItem) return;
+
+    setUndoing(true);
+    setError(null);
+    clearUndoTimer();
+
+    try {
+      await markFollowUpComplete(undoItem.id, false);
+      setFollowUps((current) => sortFollowUps([...current, undoItem]));
+      setUndoItem(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to undo follow-up");
+      setUndoItem(undoItem);
+      scheduleUndoDismiss();
+    } finally {
+      setUndoing(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Follow up</h2>
         <p className="text-sm text-muted-foreground">
-          Sales activities with a next follow-up date that are not yet completed.
+          Open follow-up items assigned to you, sorted by due date.
         </p>
       </div>
 
@@ -89,18 +147,18 @@ export function FollowUpsPage() {
       ) : null}
 
       <DashboardSection
-        title="Due follow-ups"
-        description="Sorted by follow-up date, nearest first."
+        title="Your follow-ups"
+        description="Only incomplete items assigned to you appear here."
         isLoading={loading}
         isEmpty={!loading && followUps.length === 0}
-        emptyMessage="No follow-ups due."
+        emptyMessage="No follow-ups assigned to you."
       >
         <FollowUpList>
           {followUps.map((item) => (
             <DashboardListRow
               key={item.id}
               title={item.subject?.trim() || "Sales activity"}
-              meta={`Follow up: ${formatAccountDate(item.nextFollowUp)}`}
+              meta={`Due ${formatAccountDate(item.dueDate)}`}
               accountId={item.accountId}
               accountName={item.accountName}
               accountTab="sales_activities"
@@ -111,14 +169,14 @@ export function FollowUpsPage() {
                   className="mt-1 h-4 w-4 rounded border-input"
                   aria-label={`Mark follow-up complete for ${item.subject ?? "activity"}`}
                   disabled={updatingId === item.id}
-                  onChange={() => void handleFollowUpCheck(item.id)}
+                  onChange={() => void handleFollowUpCheck(item)}
                 />
               }
               onTitleClick={() =>
                 item.accountId &&
                 openRecord({
                   table: "sales_activities",
-                  rowId: item.id,
+                  rowId: item.salesActivityId,
                   accountId: item.accountId,
                 })
               }
@@ -127,12 +185,16 @@ export function FollowUpsPage() {
         </FollowUpList>
       </DashboardSection>
 
+      {undoItem ? (
+        <FollowUpUndoBar onUndo={() => void handleUndo()} undoing={undoing} />
+      ) : null}
+
       <DashboardRecordDialog
         target={recordTarget}
         userId={userId}
         onTargetChange={setRecordTarget}
         onDismissed={() => {}}
-        onDataChange={load}
+        onDataChange={userId ? () => load(userId) : undefined}
       />
     </div>
   );

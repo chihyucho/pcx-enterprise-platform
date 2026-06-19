@@ -3,12 +3,14 @@ import { UserMenu } from "@/components/layout/user-menu";
 
 interface TopNavbarProps {
   title?: string;
+  userName?: string | null;
   userEmail?: string | null;
   showPortalLink?: boolean;
 }
 
 export function TopNavbar({
   title = "PCX Enterprise Platform",
+  userName,
   userEmail,
   showPortalLink = true,
 }: TopNavbarProps) {
@@ -28,7 +30,7 @@ export function TopNavbar({
           {title}
         </h1>
       </div>
-      <UserMenu userEmail={userEmail} showPortalLink={showPortalLink} />
+      <UserMenu userName={userName} userEmail={userEmail} />
     </header>
   );
 }

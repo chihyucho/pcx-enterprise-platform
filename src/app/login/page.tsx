@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { SignInForm } from "@/components/forms/sign-in-form";
 import {
   Card,
@@ -27,7 +28,9 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SignInForm />
+            <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+              <SignInForm />
+            </Suspense>
           </CardContent>
         </Card>
       </div>

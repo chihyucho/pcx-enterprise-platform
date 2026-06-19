@@ -8,6 +8,7 @@ interface ModuleShellProps {
   navItems: NavItem[];
   pageTitle: string;
   moduleTitle?: string;
+  userName?: string | null;
   userEmail?: string | null;
 }
 
@@ -16,6 +17,7 @@ export function ModuleShell({
   navItems,
   pageTitle,
   moduleTitle,
+  userName,
   userEmail,
 }: ModuleShellProps) {
   return (
@@ -23,7 +25,7 @@ export function ModuleShell({
       <div className="flex flex-1">
         <AppSidebar items={navItems} moduleTitle={moduleTitle} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopNavbar title={pageTitle} userEmail={userEmail} />
+          <TopNavbar title={pageTitle} userName={userName} userEmail={userEmail} />
           <MainContent>{children}</MainContent>
         </div>
       </div>

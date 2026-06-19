@@ -27,18 +27,7 @@ export const TAB_FORM_FIELDS: Record<AccountCrudTableName, TabFormFieldDef[]> = 
   sales_activities: [
     { name: "subject", label: "Subject", type: "text", required: true },
     { name: "activity_date", label: "Activity Date", type: "date" },
-    {
-      name: "contact_way",
-      label: "Contact Way",
-      type: "select",
-      options: CONTACT_WAY_OPTIONS,
-    },
-    { name: "next_follow_up", label: "Next Follow-up", type: "date" },
-    {
-      name: "follow_up_completed",
-      label: "Follow-up completed",
-      type: "boolean",
-    },
+    { name: "contact_way", label: "Contact Way", type: "select", options: CONTACT_WAY_OPTIONS },
     { name: "notes", label: "Notes", type: "textarea" },
   ],
   contact_persons: [

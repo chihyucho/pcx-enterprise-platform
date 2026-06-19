@@ -13,14 +13,6 @@ export type DashboardReadItemType =
 
 export type DashboardDismissKind = DashboardReadItemType | "follow_up";
 
-export type FollowUpItem = {
-  id: string;
-  subject: string | null;
-  nextFollowUp: string;
-  accountId: string | null;
-  accountName: string;
-};
-
 export type UnreadActivityItem = {
   id: string;
   subject: string | null;
