@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { accountDetailHref } from "@/lib/dashboard/format";
+import { cn } from "@/lib/utils";
 
 interface DashboardListRowProps {
   title: string;
@@ -11,6 +12,7 @@ interface DashboardListRowProps {
   disabled?: boolean;
   leading?: React.ReactNode;
   trailing?: React.ReactNode;
+  className?: string;
 }
 
 export function DashboardListRow({
@@ -23,9 +25,15 @@ export function DashboardListRow({
   disabled,
   leading,
   trailing,
+  className,
 }: DashboardListRowProps) {
   return (
-    <li className="px-3 py-2.5 text-sm">
+    <li
+      className={cn(
+        "px-3 py-2.5 text-sm transition-colors",
+        className
+      )}
+    >
       <div className="flex items-start gap-3">
         {leading}
         <div className="min-w-0 flex-1 space-y-1">

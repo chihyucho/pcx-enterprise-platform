@@ -8,6 +8,7 @@ export type FollowUpItem = {
   assignedUserId: string;
   assignedUserName: string;
   notes: string | null;
+  completedAt?: string | null;
 };
 
 export type AssignableUser = {

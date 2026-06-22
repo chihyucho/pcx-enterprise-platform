@@ -1,0 +1,6 @@
+# Supabase local CLI configuration.
+# Remote project settings (e.g. disable signup) must also be set in the
+# Supabase Dashboard before production deployment. See supabase/SECURITY.md.
+
+[auth]
+enable_signup = false

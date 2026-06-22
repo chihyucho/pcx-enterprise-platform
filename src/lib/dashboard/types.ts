@@ -37,6 +37,7 @@ export type PendingApprovalItem = {
   accountName: string;
   label: string;
   status: string;
+  createdAt: string;
 };
 
 export type DashboardData = {

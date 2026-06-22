@@ -16,3 +16,17 @@ export function getSupabaseEnv() {
 
   return { url, anonKey };
 }
+
+/**
+ * Server-only env (optional). Never import from client components.
+ * Use only in API routes or Server Actions when admin/service access is required.
+ */
+export function getSupabaseServiceRoleKey(): string {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is not set. It must only be used server-side."
+    );
+  }
+  return key;
+}

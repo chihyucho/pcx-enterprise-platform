@@ -2,8 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatAccountDate } from "@/lib/accounts/format";
-import { fetchFollowUps, markFollowUpComplete } from "@/lib/dashboard/client";
+import {
+  fetchCompletedFollowUps,
+  fetchFollowUps,
+  markFollowUpComplete,
+} from "@/lib/dashboard/client";
 import type { FollowUpItem } from "@/lib/follow-ups/types";
+import {
+  followUpItemBackgroundClass,
+  getFollowUpUrgency,
+} from "@/lib/follow-ups/urgency";
 import { createClient } from "@/lib/supabase/client";
 import { DashboardListRow } from "@/components/dashboard/dashboard-list-row";
 import {
@@ -14,18 +22,51 @@ import { DashboardSection } from "@/components/dashboard/dashboard-section";
 import { FollowUpUndoBar } from "@/components/follow-ups/follow-up-undo-bar";
 
 const UNDO_DURATION_MS = 5000;
+/** ~5 dashboard list rows before scrolling */
+const COMPLETED_LIST_MAX_HEIGHT = "25rem";
 
-function FollowUpList({ children }: { children: React.ReactNode }) {
+function FollowUpList({
+  children,
+  scrollable = false,
+}: {
+  children: React.ReactNode;
+  scrollable?: boolean;
+}) {
+  if (scrollable) {
+    return (
+      <div
+        className="overflow-y-auto overscroll-y-contain rounded-md border"
+        style={{ maxHeight: COMPLETED_LIST_MAX_HEIGHT }}
+      >
+        <ul className="divide-y">{children}</ul>
+      </div>
+    );
+  }
+
   return <ul className="divide-y rounded-md border">{children}</ul>;
 }
 
-function sortFollowUps(items: FollowUpItem[]): FollowUpItem[] {
+function sortOpenFollowUps(items: FollowUpItem[]): FollowUpItem[] {
   return [...items].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+
+function sortCompletedFollowUps(items: FollowUpItem[]): FollowUpItem[] {
+  return [...items].sort((a, b) =>
+    (b.completedAt ?? "").localeCompare(a.completedAt ?? "")
+  );
+}
+
+function openFollowUpItem(item: FollowUpItem): FollowUpItem {
+  const { completedAt: _completedAt, ...rest } = item;
+  return rest;
 }
 
 export function FollowUpsPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [followUps, setFollowUps] = useState<FollowUpItem[]>([]);
+  const [completedFollowUps, setCompletedFollowUps] = useState<FollowUpItem[]>(
+    []
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -47,8 +88,12 @@ export function FollowUpsPage() {
     setLoading(true);
     setError(null);
     try {
-      const next = await fetchFollowUps(uid);
-      setFollowUps(next);
+      const [open, completed] = await Promise.all([
+        fetchFollowUps(uid),
+        fetchCompletedFollowUps(uid),
+      ]);
+      setFollowUps(open);
+      setCompletedFollowUps(completed);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load follow-ups"
@@ -98,11 +143,16 @@ export function FollowUpsPage() {
 
     try {
       await markFollowUpComplete(item.id, true);
+      const completedAt = new Date().toISOString();
+      const completedItem = { ...item, completedAt };
+      setCompletedFollowUps((current) =>
+        sortCompletedFollowUps([completedItem, ...current])
+      );
       clearUndoTimer();
       setUndoItem(item);
       scheduleUndoDismiss();
     } catch (err) {
-      setFollowUps((current) => sortFollowUps([...current, item]));
+      setFollowUps((current) => sortOpenFollowUps([...current, item]));
       setError(
         err instanceof Error ? err.message : "Failed to update follow-up"
       );
@@ -120,7 +170,12 @@ export function FollowUpsPage() {
 
     try {
       await markFollowUpComplete(undoItem.id, false);
-      setFollowUps((current) => sortFollowUps([...current, undoItem]));
+      setCompletedFollowUps((current) =>
+        current.filter((entry) => entry.id !== undoItem.id)
+      );
+      setFollowUps((current) =>
+        sortOpenFollowUps([...current, openFollowUpItem(undoItem)])
+      );
       setUndoItem(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to undo follow-up");
@@ -131,12 +186,83 @@ export function FollowUpsPage() {
     }
   }
 
+  async function handleCompletedUncheck(item: FollowUpItem) {
+    setUpdatingId(item.id);
+    setError(null);
+
+    setCompletedFollowUps((current) =>
+      current.filter((entry) => entry.id !== item.id)
+    );
+
+    try {
+      await markFollowUpComplete(item.id, false);
+      setFollowUps((current) =>
+        sortOpenFollowUps([...current, openFollowUpItem(item)])
+      );
+    } catch (err) {
+      setCompletedFollowUps((current) =>
+        sortCompletedFollowUps([item, ...current])
+      );
+      setError(
+        err instanceof Error ? err.message : "Failed to reopen follow-up"
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  function renderFollowUpRow(
+    item: FollowUpItem,
+    options: {
+      checked: boolean;
+      onCheckChange: () => void;
+      meta: string;
+    }
+  ) {
+    return (
+      <DashboardListRow
+        key={item.id}
+        title={item.subject?.trim() || "Sales activity"}
+        meta={options.meta}
+        accountId={item.accountId}
+        accountName={item.accountName}
+        accountTab="sales_activities"
+        disabled={!item.accountId || updatingId === item.id}
+        className={followUpItemBackgroundClass(
+          getFollowUpUrgency(item.dueDate, item.completedAt)
+        )}
+        leading={
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-input"
+            checked={options.checked}
+            aria-label={
+              options.checked
+                ? `Mark follow-up incomplete for ${item.subject ?? "activity"}`
+                : `Mark follow-up complete for ${item.subject ?? "activity"}`
+            }
+            disabled={updatingId === item.id}
+            onChange={options.onCheckChange}
+          />
+        }
+        onTitleClick={() =>
+          item.accountId &&
+          openRecord({
+            table: "sales_activities",
+            rowId: item.salesActivityId,
+            accountId: item.accountId,
+          })
+        }
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold tracking-tight">Follow up</h2>
         <p className="text-sm text-muted-foreground">
-          Open follow-up items assigned to you, sorted by due date.
+          Open and completed follow-up items assigned to you.
         </p>
       </div>
 
@@ -148,40 +274,39 @@ export function FollowUpsPage() {
 
       <DashboardSection
         title="Your follow-ups"
-        description="Only incomplete items assigned to you appear here."
+        description="Incomplete items assigned to you, sorted by due date."
         isLoading={loading}
         isEmpty={!loading && followUps.length === 0}
-        emptyMessage="No follow-ups assigned to you."
+        emptyMessage="No open follow-ups assigned to you."
       >
         <FollowUpList>
-          {followUps.map((item) => (
-            <DashboardListRow
-              key={item.id}
-              title={item.subject?.trim() || "Sales activity"}
-              meta={`Due ${formatAccountDate(item.dueDate)}`}
-              accountId={item.accountId}
-              accountName={item.accountName}
-              accountTab="sales_activities"
-              disabled={!item.accountId || updatingId === item.id}
-              leading={
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-input"
-                  aria-label={`Mark follow-up complete for ${item.subject ?? "activity"}`}
-                  disabled={updatingId === item.id}
-                  onChange={() => void handleFollowUpCheck(item)}
-                />
-              }
-              onTitleClick={() =>
-                item.accountId &&
-                openRecord({
-                  table: "sales_activities",
-                  rowId: item.salesActivityId,
-                  accountId: item.accountId,
-                })
-              }
-            />
-          ))}
+          {followUps.map((item) =>
+            renderFollowUpRow(item, {
+              checked: false,
+              onCheckChange: () => void handleFollowUpCheck(item),
+              meta: `Due ${formatAccountDate(item.dueDate)}`,
+            })
+          )}
+        </FollowUpList>
+      </DashboardSection>
+
+      <DashboardSection
+        title="Completed"
+        description="Recently completed items, sorted by due date."
+        isLoading={loading}
+        isEmpty={!loading && completedFollowUps.length === 0}
+        emptyMessage="No completed follow-ups yet."
+      >
+        <FollowUpList scrollable>
+          {completedFollowUps.map((item) =>
+            renderFollowUpRow(item, {
+              checked: true,
+              onCheckChange: () => void handleCompletedUncheck(item),
+              meta: item.completedAt
+                ? `Completed ${formatAccountDate(item.completedAt)} · Due ${formatAccountDate(item.dueDate)}`
+                : `Due ${formatAccountDate(item.dueDate)}`,
+            })
+          )}
         </FollowUpList>
       </DashboardSection>
 

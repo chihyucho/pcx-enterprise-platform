@@ -1,7 +1,11 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { formatAccountDate } from "@/lib/accounts/format";
+import {
+  followUpItemBackgroundClass,
+  getFollowUpUrgency,
+} from "@/lib/follow-ups/urgency";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +22,7 @@ interface FollowUpOpenItemsListProps {
   disabled?: boolean;
   updatingId?: string | null;
   onComplete?: (id: string) => void;
+  onEdit?: (id: string) => void;
   onDelete: (id: string) => void;
   emptyMessage?: string;
 }
@@ -27,6 +32,7 @@ export function FollowUpOpenItemsList({
   disabled,
   updatingId,
   onComplete,
+  onEdit,
   onDelete,
   emptyMessage = "No follow-ups.",
 }: FollowUpOpenItemsListProps) {
@@ -38,13 +44,14 @@ export function FollowUpOpenItemsList({
     <ul className="divide-y rounded-md border bg-background">
       {items.map((item) => {
         const completed = Boolean(item.completedAt);
+        const urgency = getFollowUpUrgency(item.dueDate, item.completedAt);
 
         return (
           <li
             key={item.id}
             className={cn(
-              "flex items-start gap-3 px-3 py-2.5 text-sm",
-              completed && "bg-muted/30"
+              "flex items-start gap-3 px-3 py-2.5 text-sm transition-colors",
+              followUpItemBackgroundClass(urgency)
             )}
           >
             {onComplete ? (
@@ -62,14 +69,7 @@ export function FollowUpOpenItemsList({
               />
             ) : null}
             <div className="min-w-0 flex-1">
-              <p
-                className={cn(
-                  "font-medium",
-                  completed && "text-muted-foreground line-through"
-                )}
-              >
-                Due {formatAccountDate(item.dueDate)}
-              </p>
+              <p className="font-medium">Due {formatAccountDate(item.dueDate)}</p>
               <p className="text-muted-foreground">
                 Assigned to {item.assignedUserName}
                 {completed ? " · Completed" : null}
@@ -80,17 +80,30 @@ export function FollowUpOpenItemsList({
                 </p>
               ) : null}
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="shrink-0"
-              disabled={disabled || updatingId === item.id}
-              onClick={() => onDelete(item.id)}
-              aria-label="Delete follow-up"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex shrink-0 items-center gap-0.5">
+              {onEdit ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={disabled || updatingId === item.id}
+                  onClick={() => onEdit(item.id)}
+                  aria-label="Edit follow-up"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={disabled || updatingId === item.id}
+                onClick={() => onDelete(item.id)}
+                aria-label="Delete follow-up"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </li>
         );
       })}

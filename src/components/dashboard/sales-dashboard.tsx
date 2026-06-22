@@ -200,7 +200,7 @@ export function SalesDashboard() {
 
         <DashboardSection
           title="Pending approval"
-          description="Products and marketing materials awaiting approval (Pending, In Review, or On Hold)."
+          description="Products and marketing materials awaiting approval, newest submissions first."
           isLoading={loading}
           isEmpty={!loading && (data?.pendingApprovals.length ?? 0) === 0}
           emptyMessage="Nothing pending approval."
@@ -215,7 +215,7 @@ export function SalesDashboard() {
                 <DashboardListRow
                   key={`${item.kind}-${item.id}`}
                   title={item.label}
-                  meta={item.kind === "product" ? "Product" : "Marketing"}
+                  meta={`${item.kind === "product" ? "Product" : "Marketing"} · Submitted ${formatAccountDate(item.createdAt)}`}
                   accountId={item.accountId}
                   accountName={item.accountName}
                   accountTab={tab}

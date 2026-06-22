@@ -8,10 +8,12 @@ import {
   fetchAssignableUsers,
   fetchFollowUpsForActivity,
   markFollowUpItemComplete,
+  updateFollowUpItem,
 } from "@/lib/follow-ups/client";
 import type { ActivityFollowUpItem, AssignableUser } from "@/lib/follow-ups/types";
 import { pickDefaultAssignee } from "@/lib/follow-ups/draft";
 import { AddFollowUpForm } from "@/components/accounts/detail/add-follow-up-form";
+import { FollowUpEditDialog } from "@/components/accounts/detail/follow-up-edit-dialog";
 import { FollowUpOpenItemsList } from "@/components/accounts/detail/follow-up-open-items-list";
 
 interface SalesActivityFollowUpsSectionProps {
@@ -38,6 +40,11 @@ export function SalesActivityFollowUpsSection({
   );
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editingItem, setEditingItem] = useState<ActivityFollowUpItem | null>(
+    null
+  );
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const currentUserIdRef = useRef<string | null>(null);
   const onErrorRef = useRef(onError);
@@ -144,6 +151,36 @@ export function SalesActivityFollowUpsSection({
     }
   }
 
+  function handleEdit(itemId: string) {
+    const item = items.find((entry) => entry.id === itemId);
+    if (!item) return;
+    setEditingItem(item);
+    setEditOpen(true);
+  }
+
+  async function handleSaveEdit(input: { dueDate: string; notes: string }) {
+    if (!editingItem) return;
+
+    setEditSaving(true);
+    try {
+      await updateFollowUpItem(editingItem.id, {
+        dueDate: input.dueDate,
+        notes: input.notes,
+      });
+      setEditOpen(false);
+      setEditingItem(null);
+      await load();
+      onChange?.();
+    } catch (err) {
+      onErrorRef.current?.(
+        err instanceof Error ? err.message : "Failed to update follow-up."
+      );
+      throw err;
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-4 rounded-md border bg-muted/20 p-4">
       <div>
@@ -162,10 +199,22 @@ export function SalesActivityFollowUpsSection({
           disabled={disabled}
           updatingId={updatingId}
           onComplete={(id) => void handleToggleComplete(id)}
+          onEdit={handleEdit}
           onDelete={(id) => void handleDelete(id)}
           emptyMessage="No follow-ups for this activity."
         />
       )}
+
+      <FollowUpEditDialog
+        item={editingItem}
+        open={editOpen}
+        saving={editSaving}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+          if (!open) setEditingItem(null);
+        }}
+        onSave={handleSaveEdit}
+      />
 
       <AddFollowUpForm
         formId={`activity-follow-up-${activityId}`}

@@ -111,6 +111,53 @@ export async function fetchFollowUpsForUser(
     assignedUserId: row.assigned_user_id,
     assignedUserName: profileLabel(profilesById, row.assigned_user_id),
     notes: row.notes,
+    completedAt: null,
+  }));
+}
+
+export async function fetchCompletedFollowUpsForUser(
+  userId: string
+): Promise<FollowUpItem[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("follow_up_items")
+    .select(
+      `
+      id,
+      sales_activity_id,
+      account_id,
+      assigned_user_id,
+      due_date,
+      notes,
+      completed_at,
+      sales_activities(subject),
+      accounts(brand_name)
+    `
+    )
+    .eq("assigned_user_id", userId)
+    .not("completed_at", "is", null)
+    .order("completed_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rows = data ?? [];
+  const profilesById = await fetchProfilesMap(
+    rows.map((row) => row.assigned_user_id)
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    salesActivityId: row.sales_activity_id,
+    subject: (row.sales_activities as ActivityJoin)?.subject ?? null,
+    dueDate: row.due_date,
+    accountId: row.account_id,
+    accountName: accountName(row.accounts as AccountJoin),
+    assignedUserId: row.assigned_user_id,
+    assignedUserName: profileLabel(profilesById, row.assigned_user_id),
+    notes: row.notes,
+    completedAt: row.completed_at,
   }));
 }
 
@@ -174,6 +221,24 @@ export async function markFollowUpItemComplete(
   const { error } = await supabase
     .from("follow_up_items")
     .update({ completed_at: completed ? new Date().toISOString() : null })
+    .eq("id", itemId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function updateFollowUpItem(
+  itemId: string,
+  input: { dueDate: string; notes?: string | null }
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("follow_up_items")
+    .update({
+      due_date: input.dueDate,
+      notes: input.notes?.trim() || null,
+    })
     .eq("id", itemId);
 
   if (error) {

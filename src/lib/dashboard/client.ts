@@ -16,6 +16,7 @@ import type {
 
 export type { FollowUpItem } from "@/lib/follow-ups/types";
 export { fetchFollowUpsForUser as fetchFollowUps } from "@/lib/follow-ups/client";
+export { fetchCompletedFollowUpsForUser as fetchCompletedFollowUps } from "@/lib/follow-ups/client";
 export { markFollowUpItemComplete as markFollowUpComplete } from "@/lib/follow-ups/client";
 
 type AccountJoin = { brand_name: string } | null;
@@ -68,13 +69,15 @@ export async function fetchDashboardData(
     supabase
       .from("products")
       .select(
-        "id, product_number, product_category, approval_status, account_id, accounts(brand_name)"
+        "id, product_number, product_category, approval_status, created_at, account_id, accounts(brand_name)"
       )
       .in("approval_status", [...PENDING_APPROVAL_STATUSES])
       .order("created_at", { ascending: false }),
     supabase
       .from("marketing_materials")
-      .select("id, title, status, account_id, accounts(brand_name)")
+      .select(
+        "id, title, status, created_at, account_id, accounts(brand_name)"
+      )
       .in("status", [...PENDING_APPROVAL_STATUSES])
       .order("created_at", { ascending: false }),
     fetchReadIds(userId, "sales_activity"),
@@ -124,6 +127,7 @@ export async function fetchDashboardData(
         row.product_category?.trim() ||
         "Product",
       status: row.approval_status ?? "pending",
+      createdAt: row.created_at ?? new Date(0).toISOString(),
     }));
 
   const pendingMarketing: PendingApprovalItem[] = (
@@ -135,10 +139,11 @@ export async function fetchDashboardData(
     accountName: accountName(row.accounts as AccountJoin),
     label: row.title?.trim() || "Marketing material",
     status: row.status ?? "pending",
+    createdAt: row.created_at ?? new Date(0).toISOString(),
   }));
 
   const pendingApprovals = [...pendingProducts, ...pendingMarketing].sort(
-    (a, b) => a.accountName.localeCompare(b.accountName)
+    (a, b) => b.createdAt.localeCompare(a.createdAt)
   );
 
   return {
