@@ -14,8 +14,16 @@ export type AccountCrudRow<T extends AccountCrudTableName> = Tables<T>;
 export type AccountCrudInsert<T extends AccountCrudTableName> = TablesInsert<T>;
 
 export type TabFetchResult<T extends AccountCrudTableName> =
-  | { data: AccountCrudRow<T>[]; error: null }
-  | { data: null; error: string };
+  | {
+      data: AccountCrudRow<T>[];
+      error: null;
+      total: number;
+      page?: number;
+      pageSize?: number;
+      totalPages?: number;
+      hasMore?: boolean;
+    }
+  | { data: null; error: string; total?: number };
 
 export type TabInsertResult =
   | { success: true; error: null; id?: string }

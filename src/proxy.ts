@@ -1,8 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
+import {
+  canAccessProtectedRoute,
+  isAuthenticated,
+} from "@/lib/auth/auth-state";
+import { applyRedirectLoopGuard } from "@/lib/auth/redirect-guard";
+import { safeInternalPath } from "@/lib/auth/safe-redirect";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const PUBLIC_ROUTES = ["/login"];
-const AUTH_ROUTES = ["/login"];
 
 function isPublicRoute(pathname: string) {
   return PUBLIC_ROUTES.some(
@@ -11,38 +16,49 @@ function isPublicRoute(pathname: string) {
 }
 
 function isAuthRoute(pathname: string) {
-  return AUTH_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
+  return pathname === "/login" || pathname.startsWith("/login/");
+}
+
+function guardedRedirect(request: NextRequest, pathname: string): NextResponse {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  const response = NextResponse.redirect(url);
+  return applyRedirectLoopGuard(request, response, pathname).response;
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public routes render immediately without waiting on Supabase Auth API
   if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 
-  const { supabaseResponse, user } = await updateSession(request);
+  const { supabaseResponse, resolution } = await updateSession(request);
+  const allowed = canAccessProtectedRoute(resolution);
+  const loggedIn = isAuthenticated(resolution);
 
   if (pathname === "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = user ? "/portal" : "/login";
-    return NextResponse.redirect(url);
+    return guardedRedirect(request, loggedIn ? "/portal" : "/login");
   }
 
-  if (!user && !isPublicRoute(pathname)) {
+  if (!allowed) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(url);
+    const response = NextResponse.redirect(url);
+    return applyRedirectLoopGuard(request, response, "/login").response;
   }
 
-  if (user && isAuthRoute(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/portal";
-    return NextResponse.redirect(url);
+  if (loggedIn && isAuthRoute(pathname)) {
+    return guardedRedirect(request, "/portal");
+  }
+
+  if (pathname === "/login" && resolution.status === "unknown") {
+    const redirectTo = safeInternalPath(
+      request.nextUrl.searchParams.get("redirectTo"),
+      "/portal"
+    );
+    return guardedRedirect(request, redirectTo);
   }
 
   return supabaseResponse;

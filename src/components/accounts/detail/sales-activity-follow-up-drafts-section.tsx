@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSessionUserId } from "@/lib/auth/session.actions";
 import { fetchAssignableUsers } from "@/lib/follow-ups/client";
 import type { AssignableUser } from "@/lib/follow-ups/types";
 import { pickDefaultAssignee, type FollowUpDraft } from "@/lib/follow-ups/draft";
@@ -37,9 +37,8 @@ export function SalesActivityFollowUpDraftsSection({
   }, [onError]);
 
   useEffect(() => {
-    const supabase = createClient();
-    void supabase.auth.getUser().then(({ data: { user } }) => {
-      currentUserIdRef.current = user?.id ?? null;
+    void getSessionUserId().then((uid) => {
+      currentUserIdRef.current = uid;
     });
   }, []);
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter, useSearchParams } from "next/navigation";
+import { safeInternalPath } from "@/lib/auth/safe-redirect";
 
 export function SignInForm() {
   const router = useRouter();
@@ -33,10 +34,7 @@ export function SignInForm() {
       return;
     }
 
-    const destination =
-      redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")
-        ? redirectTo
-        : "/portal";
+    const destination = safeInternalPath(redirectTo);
     router.push(destination);
     router.refresh();
   }

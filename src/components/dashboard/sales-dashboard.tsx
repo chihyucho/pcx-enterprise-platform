@@ -8,7 +8,7 @@ import type {
   DashboardData,
   DashboardDismissKind,
 } from "@/lib/dashboard/types";
-import { createClient } from "@/lib/supabase/client";
+import { getSessionUserId } from "@/lib/auth/session.actions";
 import { DashboardListRow } from "@/components/dashboard/dashboard-list-row";
 import {
   DashboardRecordDialog,
@@ -89,15 +89,14 @@ export function SalesDashboard() {
   }, []);
 
   useEffect(() => {
-    const supabase = createClient();
-    void supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
+    void getSessionUserId().then((uid) => {
+      if (!uid) {
         setError("You must be signed in to view the dashboard.");
         setLoading(false);
         return;
       }
-      setUserId(user.id);
-      void load(user.id);
+      setUserId(uid);
+      void load(uid);
     });
   }, [load]);
 

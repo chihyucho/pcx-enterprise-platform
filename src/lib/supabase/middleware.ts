@@ -2,35 +2,34 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import type { Database } from "@/types/database.types";
-import type { User } from "@supabase/supabase-js";
+import {
+  canAccessProtectedRoute,
+  type AuthResolution,
+} from "@/lib/auth/auth-state";
+import { resolveAuthWithRetry, hasSupabaseSessionCookie } from "@/lib/auth/retry-auth";
+import {
+  readAuthHint,
+  writeAuthHint,
+  clearAuthHint,
+} from "@/lib/auth/session-cache";
 
-const AUTH_TIMEOUT_MS = 4000;
+export type SessionUpdateResult = {
+  supabaseResponse: NextResponse;
+  resolution: AuthResolution;
+};
 
-async function getUserWithTimeout(
-  getUser: () => ReturnType<
-    ReturnType<typeof createServerClient<Database>>["auth"]["getUser"]
-  >
-): Promise<User | null> {
-  try {
-    const result = await Promise.race([
-      getUser(),
-      new Promise<never>((_, reject) => {
-        setTimeout(
-          () => reject(new Error("Supabase auth request timed out")),
-          AUTH_TIMEOUT_MS
-        );
-      }),
-    ]);
-    return result.data.user;
-  } catch {
-    return null;
-  }
-}
-
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+/**
+ * Edge-safe session refresh:
+ * - Uses cookie session hint + getSession (no DB)
+ * - Retries getUser() for authoritative auth
+ * - UNKNOWN state when session cookie exists but auth API is flaky
+ */
+export async function updateSession(
+  request: NextRequest
+): Promise<SessionUpdateResult> {
+  let supabaseResponse = NextResponse.next({ request });
+  const hasSessionCookie = hasSupabaseSessionCookie(request);
+  const cachedHint = readAuthHint(request);
 
   try {
     const { url, anonKey } = getSupabaseEnv();
@@ -44,9 +43,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -54,9 +51,37 @@ export async function updateSession(request: NextRequest) {
       },
     });
 
-    const user = await getUserWithTimeout(() => supabase.auth.getUser());
-    return { supabaseResponse, user };
+    const resolution = await resolveAuthWithRetry(
+      () => supabase.auth.getUser(),
+      { hasSessionCookie, attempts: 3 }
+    );
+
+    if (resolution.status === "authenticated") {
+      writeAuthHint(supabaseResponse, resolution.user.id);
+      return { supabaseResponse, resolution };
+    }
+
+    if (resolution.status === "unknown") {
+      if (cachedHint) {
+        return { supabaseResponse, resolution };
+      }
+      if (hasSessionCookie) {
+        return { supabaseResponse, resolution: { status: "unknown" } };
+      }
+    }
+
+    clearAuthHint(supabaseResponse);
+    return { supabaseResponse, resolution: { status: "logged_out" } };
   } catch {
-    return { supabaseResponse, user: null };
+    if (hasSessionCookie || cachedHint) {
+      return {
+        supabaseResponse,
+        resolution: { status: "unknown" },
+      };
+    }
+    clearAuthHint(supabaseResponse);
+    return { supabaseResponse, resolution: { status: "logged_out" } };
   }
 }
+
+export { canAccessProtectedRoute };

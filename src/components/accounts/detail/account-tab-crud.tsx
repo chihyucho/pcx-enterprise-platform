@@ -26,6 +26,7 @@ import { CreateRecordDialog } from "@/components/accounts/detail/create-record-d
 import { RecordDetailDialog } from "@/components/accounts/detail/record-detail-dialog";
 import { ProjectFilterSelect } from "@/components/accounts/detail/project-filter-select";
 import { AccountTabPanel } from "@/components/accounts/detail/account-tab-panel";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -49,9 +50,6 @@ export function AccountTabCrud({
   );
 
   const projectScoped = isProjectScopedTable(table);
-  const { rows, error, loading, submitting, reload, create, update, remove, formFields } =
-    useAccountTabCrud(table, accountId, enabled);
-  const canDelete = isDeletableAccountTabTable(table);
   const {
     projects,
     filterProjectId,
@@ -59,8 +57,33 @@ export function AccountTabCrud({
     showProjectFilter,
     showProjectOnCreate,
     defaultCreateProjectId,
-    filterRows,
   } = useAccountProjects(accountId, enabled && projectScoped);
+  const projectFilter =
+    projectScoped && filterProjectId !== "all" ? filterProjectId : undefined;
+
+  const {
+    rows,
+    error,
+    loading,
+    submitting,
+    reload,
+    create,
+    update,
+    remove,
+    formFields,
+    page,
+    setPage,
+    total,
+    totalPages,
+    isFetching,
+    goNext,
+    goPrev,
+  } = useAccountTabCrud(table, accountId, enabled, { projectId: projectFilter });
+  const canDelete = isDeletableAccountTabTable(table);
+
+  useEffect(() => {
+    setPage(1);
+  }, [projectFilter, setPage]);
 
   const columns = useMemo(
     () =>
@@ -77,17 +100,14 @@ export function AccountTabCrud({
   );
 
   const filteredRows = useMemo(() => {
-    const scoped = projectScoped
-      ? filterRows(rows as { project_id?: string | null }[])
-      : rows;
     if (!projectScoped || !showProjectOnCreate) {
-      return scoped as unknown as Record<string, unknown>[];
+      return rows as unknown as Record<string, unknown>[];
     }
     return enrichRowsWithProjectName(
-      scoped as { project_id?: string | null }[],
+      rows as { project_id?: string | null }[],
       projects
     ) as unknown as Record<string, unknown>[];
-  }, [rows, projectScoped, filterRows, showProjectOnCreate, projects]);
+  }, [rows, projectScoped, showProjectOnCreate, projects]);
 
   const selectedDisplayRow = useMemo(() => {
     if (!selectedRow) return null;
@@ -205,12 +225,22 @@ export function AccountTabCrud({
             {null}
           </AccountTabPanel>
         ) : (
-          <AccountDataTable
-            columns={columns}
-            rows={filteredRows}
-            emptyMessage="No records yet."
-            onRowClick={openDetail}
-          />
+          <>
+            <AccountDataTable
+              columns={columns}
+              rows={filteredRows}
+              emptyMessage="No records yet."
+              onRowClick={openDetail}
+            />
+            <PaginationControls
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              isLoading={isFetching}
+              onPrevious={goPrev}
+              onNext={goNext}
+            />
+          </>
         )}
       </div>
 

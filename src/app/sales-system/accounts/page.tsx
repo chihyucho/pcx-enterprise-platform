@@ -1,19 +1,22 @@
-import { getAccounts } from "@/lib/accounts/queries";
+import { fetchAccountsPage } from "@/lib/accounts/accounts-pagination";
 import { AccountsPageClient } from "@/components/accounts/accounts-page-client";
 import { AccountsErrorState } from "@/components/accounts/accounts-error-state";
 
 export default async function AccountsPage() {
-  const result = await getAccounts();
+  const response = await fetchAccountsPage({ page: 1 });
 
-  if (result.error || !result.data) {
+  if (response.error || !response.result) {
     return (
       <AccountsErrorState
-        message={result.error ?? "Failed to load accounts."}
+        message={response.error ?? "Failed to load accounts."}
       />
     );
   }
 
   return (
-    <AccountsPageClient accounts={result.data} stages={result.stages} />
+    <AccountsPageClient
+      initialResult={response.result}
+      stages={response.stages}
+    />
   );
 }

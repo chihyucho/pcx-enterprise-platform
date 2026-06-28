@@ -33,7 +33,7 @@ export default async function NewAccountPage() {
             <code className="text-xs">business_categories</code> tables. If you
             see permission denied, apply the RLS section of{" "}
             <code className="text-xs">
-              supabase/migrations/20260520120000_sales_rls_and_seed.sql
+              supabase/migrations/20260520190500_security_hardening.sql
             </code>
             .
           </p>

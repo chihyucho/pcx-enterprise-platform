@@ -162,7 +162,8 @@ export function DashboardRecordDialog({
       table,
       target.rowId,
       values,
-      TAB_FORM_FIELDS[table]
+      TAB_FORM_FIELDS[table],
+      target.accountId
     );
     if (result.success) {
       const refreshed = await fetchAccountTabRowById(table, target.rowId);
@@ -180,7 +181,11 @@ export function DashboardRecordDialog({
       return { success: false, error: "No record selected." };
     }
     setSubmitting(true);
-    const result = await deleteAccountTabRow(table, target.rowId);
+    const result = await deleteAccountTabRow(
+      table,
+      target.rowId,
+      target.accountId
+    );
     if (result.success) {
       dismissedRef.current = true;
       onDismissed(target.dismissKind, target.rowId);

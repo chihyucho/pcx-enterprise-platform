@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSessionUserId } from "@/lib/auth/session.actions";
 import {
   createFollowUpItem,
   deleteFollowUpItem,
@@ -55,9 +55,8 @@ export function SalesActivityFollowUpsSection({
   }, [onError]);
 
   useEffect(() => {
-    const supabase = createClient();
-    void supabase.auth.getUser().then(({ data: { user } }) => {
-      currentUserIdRef.current = user?.id ?? null;
+    void getSessionUserId().then((uid) => {
+      currentUserIdRef.current = uid;
     });
   }, []);
 

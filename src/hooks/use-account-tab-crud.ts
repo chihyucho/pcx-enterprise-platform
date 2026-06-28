@@ -1,55 +1,54 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   deleteAccountTabRow,
-  fetchAccountTabRows,
   insertAccountTabRow,
   updateAccountTabRow,
 } from "@/lib/accounts/tab-client";
 import { TAB_FORM_FIELDS } from "@/lib/schema/tab-form-fields";
+import { useUnifiedPagination } from "@/hooks/useUnifiedPagination";
+import { unifiedQueryKey } from "@/hooks/useUnifiedQuery";
 import type { AccountCrudTableName } from "@/types/tab-crud";
 import type { Tables } from "@/types/database.types";
-
-interface CrudState<T extends AccountCrudTableName> {
-  data: Tables<T>[] | null;
-  error: string | null;
-  loading: boolean;
-  submitting: boolean;
-}
-
-const initialState = <T extends AccountCrudTableName>(): CrudState<T> => ({
-  data: null,
-  error: null,
-  loading: false,
-  submitting: false,
-});
 
 export function useAccountTabCrud<T extends AccountCrudTableName>(
   table: T,
   accountId: string,
-  enabled: boolean
+  enabled: boolean,
+  options?: { projectId?: string | null }
 ) {
-  const [state, setState] = useState<CrudState<T>>(initialState);
+  const [submitting, setSubmitting] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    setState((prev) => ({ ...prev, loading: true, error: null }));
-    const result = await fetchAccountTabRows(table, accountId);
-    if (result.error) {
-      setState({ data: null, error: result.error, loading: false, submitting: false });
-      return;
+  const filters = useMemo(() => {
+    const next: Record<string, string> = { account_id: accountId };
+    if (options?.projectId) {
+      next.project_id = options.projectId;
     }
-    setState((prev) => ({
-      ...prev,
-      data: result.data,
-      error: null,
-      loading: false,
-    }));
-  }, [table, accountId]);
+    return next;
+  }, [accountId, options?.projectId]);
+
+  const pagination = useUnifiedPagination<Tables<T>>(
+    {
+      table,
+      filters,
+    },
+    { enabled }
+  );
+
+  const invalidate = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: unifiedQueryKey({ table, filters }),
+    });
+  }, [queryClient, table, filters]);
 
   const create = useCallback(
     async (values: Record<string, string>) => {
-      setState((prev) => ({ ...prev, submitting: true, error: null }));
+      setSubmitting(true);
+      setMutationError(null);
       const result = await insertAccountTabRow(
         table,
         accountId,
@@ -58,82 +57,79 @@ export function useAccountTabCrud<T extends AccountCrudTableName>(
       );
 
       if (!result.success) {
-        setState((prev) => ({
-          ...prev,
-          submitting: false,
-          error: result.error,
-        }));
+        setSubmitting(false);
+        setMutationError(result.error);
         return { success: false as const, error: result.error };
       }
 
-      await load();
-      setState((prev) => ({ ...prev, submitting: false }));
+      await invalidate();
+      setSubmitting(false);
       return { success: true as const, error: null, id: result.id };
     },
-    [table, accountId, load]
+    [table, accountId, invalidate]
   );
 
   const update = useCallback(
     async (id: string, values: Record<string, string>) => {
-      setState((prev) => ({ ...prev, submitting: true, error: null }));
+      setSubmitting(true);
+      setMutationError(null);
       const result = await updateAccountTabRow(
         table,
         id,
         values,
-        TAB_FORM_FIELDS[table]
+        TAB_FORM_FIELDS[table],
+        accountId
       );
 
       if (!result.success) {
-        setState((prev) => ({
-          ...prev,
-          submitting: false,
-          error: result.error,
-        }));
+        setSubmitting(false);
+        setMutationError(result.error);
         return { success: false as const, error: result.error };
       }
 
-      await load();
-      setState((prev) => ({ ...prev, submitting: false }));
+      await invalidate();
+      setSubmitting(false);
       return { success: true as const, error: null };
     },
-    [table, load]
+    [table, accountId, invalidate]
   );
 
   const remove = useCallback(
     async (id: string) => {
-      setState((prev) => ({ ...prev, submitting: true, error: null }));
-      const result = await deleteAccountTabRow(table, id);
+      setSubmitting(true);
+      setMutationError(null);
+      const result = await deleteAccountTabRow(table, id, accountId);
 
       if (!result.success) {
-        setState((prev) => ({
-          ...prev,
-          submitting: false,
-          error: result.error,
-        }));
+        setSubmitting(false);
+        setMutationError(result.error);
         return { success: false as const, error: result.error };
       }
 
-      await load();
-      setState((prev) => ({ ...prev, submitting: false }));
+      await invalidate();
+      setSubmitting(false);
       return { success: true as const, error: null };
     },
-    [table, load]
+    [table, accountId, invalidate]
   );
 
-  useEffect(() => {
-    if (!enabled) return;
-    load();
-  }, [enabled, load]);
-
   return {
-    rows: state.data ?? [],
-    error: state.error,
-    loading: state.loading,
-    submitting: state.submitting,
-    reload: load,
+    rows: pagination.items,
+    error: mutationError ?? (pagination.error?.message ?? null),
+    loading: pagination.isLoading,
+    submitting,
+    reload: () => void pagination.refetch(),
     create,
     update,
     remove,
     formFields: TAB_FORM_FIELDS[table],
+    page: pagination.page,
+    setPage: pagination.setPage,
+    total: pagination.total,
+    totalPages: pagination.totalPages,
+    hasMore: pagination.hasMore,
+    isFetching: pagination.isFetching,
+    goNext: pagination.goNext,
+    goPrev: pagination.goPrev,
   };
 }

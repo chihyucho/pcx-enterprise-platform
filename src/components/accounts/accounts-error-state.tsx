@@ -35,7 +35,7 @@ export function AccountsErrorState({ message }: AccountsErrorStateProps) {
             <p className="text-sm text-muted-foreground">
               Apply RLS policies from{" "}
               <code className="text-xs">
-                supabase/migrations/20260520120000_sales_rls_and_seed.sql
+                supabase/migrations/20260520190500_security_hardening.sql
               </code>{" "}
               (policies only — no seed data). Run in the Supabase SQL Editor,
               then refresh.

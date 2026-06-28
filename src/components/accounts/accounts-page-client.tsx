@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,33 +14,45 @@ import {
 } from "@/components/ui/select";
 import { AccountsTable } from "@/components/tables/accounts-table";
 import { AccountsEmptyState } from "@/components/accounts/accounts-empty-state";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { usePaginatedAccounts } from "@/hooks/usePaginatedAccounts";
 import type { AccountListItem, StageOption } from "@/types/account";
+import type { PaginatedResult } from "@/lib/data/pagination";
 
 interface AccountsPageClientProps {
-  accounts: AccountListItem[];
+  initialResult: PaginatedResult<AccountListItem>;
   stages: StageOption[];
 }
 
 export function AccountsPageClient({
-  accounts,
+  initialResult,
   stages,
 }: AccountsPageClientProps) {
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("all");
 
-  const filteredAccounts = useMemo(() => {
-    return accounts.filter((account) => {
-      const matchesSearch =
-        search === "" ||
-        account.brandName.toLowerCase().includes(search.toLowerCase()) ||
-        account.categoryName.toLowerCase().includes(search.toLowerCase());
-      const matchesStage =
-        stageFilter === "all" || account.stageId === stageFilter;
-      return matchesSearch && matchesStage;
-    });
-  }, [accounts, search, stageFilter]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const showEmptyState = accounts.length === 0;
+  const { data, isFetching, error } = usePaginatedAccounts(
+    {
+      page,
+      search: debouncedSearch,
+      stageId: stageFilter,
+    },
+    { result: initialResult, stages }
+  );
+
+  const result = data?.result ?? initialResult;
+  const stageOptions = data?.stages ?? stages;
+  const showEmptyState = result.total === 0 && !debouncedSearch && stageFilter === "all";
 
   return (
     <div className="space-y-6">
@@ -59,6 +71,12 @@ export function AccountsPageClient({
         </Button>
       </div>
 
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error.message}
+        </p>
+      ) : null}
+
       {showEmptyState ? (
         <AccountsEmptyState />
       ) : (
@@ -67,36 +85,43 @@ export function AccountsPageClient({
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by brand or category..."
+                placeholder="Search by brand..."
                 className="pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <Select value={stageFilter} onValueChange={setStageFilter}>
+            <Select
+              value={stageFilter}
+              onValueChange={(value) => {
+                setStageFilter(value);
+                setPage(1);
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by stage" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stages</SelectItem>
-                {stages.map((stage) => (
+                {stageOptions.map((stage) => (
                   <SelectItem key={stage.id} value={stage.id}>
                     {stage.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select disabled>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Source (soon)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sources</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
-          <AccountsTable accounts={filteredAccounts} />
+          <AccountsTable accounts={result.items} />
+
+          <PaginationControls
+            page={result.page}
+            totalPages={result.totalPages}
+            total={result.total}
+            isLoading={isFetching}
+            onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+            onNext={() => setPage((current) => current + 1)}
+          />
         </>
       )}
     </div>

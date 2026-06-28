@@ -70,6 +70,11 @@ export async function updateProfileEmail(
     return { success: false, error: "Email is required." };
   }
 
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(trimmed)) {
+    return { success: false, error: "Enter a valid email address." };
+  }
+
   const { error: authError } = await supabase.auth.updateUser({
     email: trimmed,
   });

@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatAccountDate } from "@/lib/accounts/format";
 import {
-  fetchCompletedFollowUps,
-  fetchFollowUps,
+  fetchCompletedFollowUpsPageForUser,
+  fetchFollowUpsPageForUser,
   markFollowUpComplete,
 } from "@/lib/dashboard/client";
 import type { FollowUpItem } from "@/lib/follow-ups/types";
@@ -12,7 +12,7 @@ import {
   followUpItemBackgroundClass,
   getFollowUpUrgency,
 } from "@/lib/follow-ups/urgency";
-import { createClient } from "@/lib/supabase/client";
+import { getSessionUserId } from "@/lib/auth/session.actions";
 import { DashboardListRow } from "@/components/dashboard/dashboard-list-row";
 import {
   DashboardRecordDialog,
@@ -20,6 +20,7 @@ import {
 } from "@/components/dashboard/dashboard-record-dialog";
 import { DashboardSection } from "@/components/dashboard/dashboard-section";
 import { FollowUpUndoBar } from "@/components/follow-ups/follow-up-undo-bar";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 const UNDO_DURATION_MS = 5000;
 /** ~5 dashboard list rows before scrolling */
@@ -67,6 +68,12 @@ export function FollowUpsPage() {
   const [completedFollowUps, setCompletedFollowUps] = useState<FollowUpItem[]>(
     []
   );
+  const [openPage, setOpenPage] = useState(1);
+  const [completedPage, setCompletedPage] = useState(1);
+  const [openTotal, setOpenTotal] = useState(0);
+  const [completedTotal, setCompletedTotal] = useState(0);
+  const [openTotalPages, setOpenTotalPages] = useState(1);
+  const [completedTotalPages, setCompletedTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -84,16 +91,20 @@ export function FollowUpsPage() {
     }
   }, []);
 
-  const load = useCallback(async (uid: string) => {
+  const load = useCallback(async (uid: string, openPg: number, completedPg: number) => {
     setLoading(true);
     setError(null);
     try {
       const [open, completed] = await Promise.all([
-        fetchFollowUps(uid),
-        fetchCompletedFollowUps(uid),
+        fetchFollowUpsPageForUser(uid, openPg),
+        fetchCompletedFollowUpsPageForUser(uid, completedPg),
       ]);
-      setFollowUps(open);
-      setCompletedFollowUps(completed);
+      setFollowUps(open.items);
+      setCompletedFollowUps(completed.items);
+      setOpenTotal(open.total);
+      setCompletedTotal(completed.total);
+      setOpenTotalPages(open.totalPages);
+      setCompletedTotalPages(completed.totalPages);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load follow-ups"
@@ -104,17 +115,20 @@ export function FollowUpsPage() {
   }, []);
 
   useEffect(() => {
-    const supabase = createClient();
-    void supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
+    void getSessionUserId().then((uid) => {
+      if (!uid) {
         setError("You must be signed in to view follow-ups.");
         setLoading(false);
         return;
       }
-      setUserId(user.id);
-      void load(user.id);
+      setUserId(uid);
     });
-  }, [load]);
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    void load(userId, openPage, completedPage);
+  }, [userId, load, openPage, completedPage]);
 
   useEffect(() => {
     return () => {
@@ -288,6 +302,14 @@ export function FollowUpsPage() {
             })
           )}
         </FollowUpList>
+        <PaginationControls
+          page={openPage}
+          totalPages={openTotalPages}
+          total={openTotal}
+          isLoading={loading}
+          onPrevious={() => setOpenPage((current) => Math.max(1, current - 1))}
+          onNext={() => setOpenPage((current) => current + 1)}
+        />
       </DashboardSection>
 
       <DashboardSection
@@ -308,6 +330,16 @@ export function FollowUpsPage() {
             })
           )}
         </FollowUpList>
+        <PaginationControls
+          page={completedPage}
+          totalPages={completedTotalPages}
+          total={completedTotal}
+          isLoading={loading}
+          onPrevious={() =>
+            setCompletedPage((current) => Math.max(1, current - 1))
+          }
+          onNext={() => setCompletedPage((current) => current + 1)}
+        />
       </DashboardSection>
 
       {undoItem ? (
@@ -319,7 +351,11 @@ export function FollowUpsPage() {
         userId={userId}
         onTargetChange={setRecordTarget}
         onDismissed={() => {}}
-        onDataChange={userId ? () => load(userId) : undefined}
+        onDataChange={
+          userId
+            ? () => void load(userId, openPage, completedPage)
+            : undefined
+        }
       />
     </div>
   );
