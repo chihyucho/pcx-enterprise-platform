@@ -24,7 +24,7 @@ interface AddFollowUpFormProps {
   onDueDateChange: (value: string) => void;
   onAssignedUserIdChange: (value: string) => void;
   onNotesChange: (value: string) => void;
-  onSubmit: (event: React.FormEvent) => void;
+  onAdd: () => void | Promise<void>;
 }
 
 export function AddFollowUpForm({
@@ -38,15 +38,37 @@ export function AddFollowUpForm({
   onDueDateChange,
   onAssignedUserIdChange,
   onNotesChange,
-  onSubmit,
+  onAdd,
 }: AddFollowUpFormProps) {
   const selectValue =
     assignedUserId && users.some((user) => user.id === assignedUserId)
       ? assignedUserId
       : undefined;
 
+  const headingId = `${formId}-heading`;
+
+  function handleFieldKeyDown(event: React.KeyboardEvent) {
+    if (event.key !== "Enter" || event.target instanceof HTMLTextAreaElement) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (!disabled && !saving) {
+      void onAdd();
+    }
+  }
+
   return (
-    <form onSubmit={onSubmit} className="space-y-3 border-t pt-4">
+    <div
+      role="group"
+      aria-labelledby={headingId}
+      className="space-y-3 border-t pt-4"
+      onKeyDown={handleFieldKeyDown}
+    >
+      <p id={headingId} className="sr-only">
+        Add follow-up
+      </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor={`${formId}-due-date`}>Due date</Label>
@@ -55,7 +77,6 @@ export function AddFollowUpForm({
             type="date"
             value={dueDate}
             onChange={(e) => onDueDateChange(e.target.value)}
-            required
             disabled={disabled || saving}
           />
         </div>
@@ -96,13 +117,14 @@ export function AddFollowUpForm({
         />
       </div>
       <Button
-        type="submit"
+        type="button"
         size="sm"
         disabled={disabled || saving || !assignedUserId}
+        onClick={() => void onAdd()}
       >
         <Plus className="mr-2 h-4 w-4" />
         {saving ? "Adding…" : "Add follow-up"}
       </Button>
-    </form>
+    </div>
   );
 }

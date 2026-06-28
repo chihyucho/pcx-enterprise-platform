@@ -14,6 +14,7 @@ import { RecordFormFields } from "@/components/accounts/detail/record-form-field
 import { ProjectSelectField } from "@/components/accounts/detail/project-select-field";
 import { SalesActivityFollowUpDraftsSection } from "@/components/accounts/detail/sales-activity-follow-up-drafts-section";
 import { emptyFormValues } from "@/lib/accounts/row-form-values";
+import { todayDateInputValue } from "@/lib/accounts/format";
 import type { AccountProjectRow } from "@/lib/accounts/project-utils";
 import type { TabFormFieldDef } from "@/lib/schema/tab-form-fields";
 import type { FollowUpDraft } from "@/lib/follow-ups/draft";
@@ -42,11 +43,18 @@ interface CreateRecordDialogProps {
 
 function buildInitialValues(
   fields: TabFormFieldDef[],
-  defaultProjectId?: string | null
+  defaultProjectId?: string | null,
+  options?: { defaultActivityDate?: boolean }
 ): Record<string, string> {
   const values = emptyFormValues(fields);
   if (defaultProjectId) {
     values.project_id = defaultProjectId;
+  }
+  if (
+    options?.defaultActivityDate &&
+    fields.some((field) => field.name === "activity_date")
+  ) {
+    values.activity_date = todayDateInputValue();
   }
   return values;
 }
@@ -67,22 +75,32 @@ export function CreateRecordDialog({
   const showProjectSelect = projects.length > 0;
   const showFollowUpDrafts = recordTable === "sales_activities";
   const [values, setValues] = useState<Record<string, string>>(() =>
-    buildInitialValues(fields, defaultProjectId)
+    buildInitialValues(fields, defaultProjectId, {
+      defaultActivityDate: recordTable === "sales_activities",
+    })
   );
   const [followUpDrafts, setFollowUpDrafts] = useState<FollowUpDraft[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setValues(buildInitialValues(fields, defaultProjectId));
+      setValues(
+        buildInitialValues(fields, defaultProjectId, {
+          defaultActivityDate: recordTable === "sales_activities",
+        })
+      );
       setFollowUpDrafts([]);
       setFormError(null);
     }
-  }, [open, fields, defaultProjectId]);
+  }, [open, fields, defaultProjectId, recordTable]);
 
   function handleOpenChange(next: boolean) {
     if (!next) {
-      setValues(buildInitialValues(fields, defaultProjectId));
+      setValues(
+        buildInitialValues(fields, defaultProjectId, {
+          defaultActivityDate: recordTable === "sales_activities",
+        })
+      );
       setFollowUpDrafts([]);
       setFormError(null);
     }
@@ -115,7 +133,11 @@ export function CreateRecordDialog({
       return;
     }
 
-    setValues(buildInitialValues(fields, defaultProjectId));
+    setValues(
+      buildInitialValues(fields, defaultProjectId, {
+        defaultActivityDate: recordTable === "sales_activities",
+      })
+    );
     setFollowUpDrafts([]);
     onOpenChange(false);
   }

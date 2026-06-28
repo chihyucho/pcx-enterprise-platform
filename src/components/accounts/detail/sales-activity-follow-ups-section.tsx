@@ -12,6 +12,7 @@ import {
 } from "@/lib/follow-ups/client";
 import type { ActivityFollowUpItem, AssignableUser } from "@/lib/follow-ups/types";
 import { pickDefaultAssignee } from "@/lib/follow-ups/draft";
+import { getFollowUpAddValidation } from "@/lib/follow-ups/validate-add-input";
 import { AddFollowUpForm } from "@/components/accounts/detail/add-follow-up-form";
 import { FollowUpEditDialog } from "@/components/accounts/detail/follow-up-edit-dialog";
 import { FollowUpOpenItemsList } from "@/components/accounts/detail/follow-up-open-items-list";
@@ -88,10 +89,24 @@ export function SalesActivityFollowUpsSection({
     void load();
   }, [load]);
 
-  async function handleAdd(event: React.FormEvent) {
-    event.preventDefault();
-    if (!dueDate || !assignedUserId) {
-      onErrorRef.current?.("Due date and assignee are required.");
+  async function handleAdd() {
+    const validation = getFollowUpAddValidation({
+      dueDate,
+      assignedUserId,
+      notes,
+    });
+
+    if (validation.action === "noop") {
+      return;
+    }
+
+    if (validation.action === "error") {
+      onErrorRef.current?.(validation.message);
+      return;
+    }
+
+    if (!assignedUserId) {
+      onErrorRef.current?.("Select a valid assignee.");
       return;
     }
 
@@ -227,7 +242,7 @@ export function SalesActivityFollowUpsSection({
         onDueDateChange={setDueDate}
         onAssignedUserIdChange={setAssignedUserId}
         onNotesChange={setNotes}
-        onSubmit={handleAdd}
+        onAdd={handleAdd}
       />
     </div>
   );

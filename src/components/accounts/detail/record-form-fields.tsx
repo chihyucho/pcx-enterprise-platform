@@ -83,6 +83,7 @@ export function RecordFormFields({
                 value={values[field.name] ?? ""}
                 onChange={(e) => onChange(field.name, e.target.value)}
                 placeholder={field.placeholder}
+                required={field.required}
               />
             )}
           </div>
