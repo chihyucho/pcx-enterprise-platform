@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { mapTabWriteToPayload } from "@/lib/accounts/tab-payload";
-import { sanitizeRecordValues } from "@/lib/sanitize";
+import { sanitizeTabWriteValues } from "@/lib/sanitize";
 import { validateTabWrite } from "@/schemas/tab.schemas";
 import type { AccountCrudTableName, TabInsertResult } from "@/types/tab-crud";
 import type { TablesUpdate } from "@/types/database.types";
@@ -48,7 +48,7 @@ export async function insertAccountTabRowAction<T extends AccountCrudTableName>(
   accountId: string,
   values: Record<string, string>
 ): Promise<TabInsertResult> {
-  const sanitized = sanitizeRecordValues(values);
+  const sanitized = sanitizeTabWriteValues(table, values);
   const validated = validateTabWrite(table, sanitized);
   if (!validated.success) {
     return { success: false, error: validated.error };
@@ -89,7 +89,7 @@ export async function updateAccountTabRowAction<T extends AccountCrudTableName>(
   accountId: string,
   values: Record<string, string>
 ): Promise<TabInsertResult> {
-  const sanitized = sanitizeRecordValues(values);
+  const sanitized = sanitizeTabWriteValues(table, values);
   const validated = validateTabWrite(table, sanitized);
   if (!validated.success) {
     return { success: false, error: validated.error };

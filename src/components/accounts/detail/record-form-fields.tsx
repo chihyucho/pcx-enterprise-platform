@@ -2,7 +2,9 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollableNotesTextarea } from "@/components/accounts/detail/scrollable-notes-textarea";
 import { mergeSelectOptions } from "@/lib/schema/field-options";
+import { INPUT_LIMITS } from "@/lib/sanitize";
 import type { TabFormFieldDef } from "@/lib/schema/tab-form-fields";
 
 interface RecordFormFieldsProps {
@@ -15,6 +17,9 @@ interface RecordFormFieldsProps {
 const selectClassName =
   "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
+const defaultTextareaClassName =
+  "flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-relaxed shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
 export function RecordFormFields({
   fields,
   values,
@@ -25,6 +30,8 @@ export function RecordFormFields({
     <>
       {fields.map((field) => {
         const inputId = `${idPrefix}${field.name}`;
+        const maxLength = field.maxLength ?? INPUT_LIMITS.mediumText;
+
         return (
           <div key={field.name} className="space-y-2">
             <Label htmlFor={inputId}>
@@ -33,11 +40,20 @@ export function RecordFormFields({
                 <span className="text-destructive"> *</span>
               ) : null}
             </Label>
-            {field.type === "textarea" ? (
+            {field.type === "textarea" && field.scrollable ? (
+              <ScrollableNotesTextarea
+                id={inputId}
+                value={values[field.name] ?? ""}
+                maxLength={maxLength}
+                placeholder={field.placeholder}
+                onChange={(next) => onChange(field.name, next)}
+              />
+            ) : field.type === "textarea" ? (
               <textarea
                 id={inputId}
-                className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-relaxed shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={defaultTextareaClassName}
                 value={values[field.name] ?? ""}
+                maxLength={maxLength}
                 onChange={(e) => onChange(field.name, e.target.value)}
                 placeholder={field.placeholder}
               />
@@ -81,6 +97,9 @@ export function RecordFormFields({
                       : "text"
                 }
                 value={values[field.name] ?? ""}
+                maxLength={
+                  field.type === "text" ? maxLength : undefined
+                }
                 onChange={(e) => onChange(field.name, e.target.value)}
                 placeholder={field.placeholder}
                 required={field.required}

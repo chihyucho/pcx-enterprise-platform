@@ -5,6 +5,7 @@ import {
   PRODUCT_APPROVAL_STATUS_OPTIONS,
   type FieldOption,
 } from "@/lib/schema/field-options";
+import { INPUT_LIMITS } from "@/lib/sanitize";
 
 export type FormFieldType =
   | "text"
@@ -21,6 +22,9 @@ export interface TabFormFieldDef {
   required?: boolean;
   placeholder?: string;
   options?: readonly FieldOption[];
+  maxLength?: number;
+  /** Viewport-aware internal scroll (Notes fields only). */
+  scrollable?: boolean;
 }
 
 export const TAB_FORM_FIELDS: Record<AccountCrudTableName, TabFormFieldDef[]> = {
@@ -28,7 +32,13 @@ export const TAB_FORM_FIELDS: Record<AccountCrudTableName, TabFormFieldDef[]> = 
     { name: "subject", label: "Subject", type: "text", required: true },
     { name: "activity_date", label: "Activity Date", type: "date", required: true },
     { name: "contact_way", label: "Contact Way", type: "select", options: CONTACT_WAY_OPTIONS },
-    { name: "notes", label: "Notes", type: "textarea" },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+      maxLength: INPUT_LIMITS.longText,
+      scrollable: true,
+    },
   ],
   contact_persons: [
     { name: "name", label: "Name", type: "text", required: true },
@@ -37,7 +47,13 @@ export const TAB_FORM_FIELDS: Record<AccountCrudTableName, TabFormFieldDef[]> = 
     { name: "phone", label: "Phone", type: "text" },
     { name: "linkedin", label: "LinkedIn", type: "text" },
     { name: "primary_contact", label: "Primary Contact", type: "boolean" },
-    { name: "notes", label: "Notes", type: "textarea" },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+      maxLength: INPUT_LIMITS.longText,
+      scrollable: true,
+    },
   ],
   products: [
     { name: "product_number", label: "Product Number", type: "text" },
@@ -57,12 +73,23 @@ export const TAB_FORM_FIELDS: Record<AccountCrudTableName, TabFormFieldDef[]> = 
     { name: "price", label: "Price", type: "number" },
     { name: "currency", label: "Currency", type: "text" },
     { name: "quote_date", label: "Quote Date", type: "date" },
-    { name: "notes", label: "Note", type: "textarea" },
+    {
+      name: "notes",
+      label: "Note",
+      type: "textarea",
+      maxLength: INPUT_LIMITS.longText,
+      scrollable: true,
+    },
   ],
   marketing_materials: [
     { name: "title", label: "Title", type: "text", required: true },
     { name: "channel", label: "Channel", type: "text" },
-    { name: "description", label: "Description", type: "textarea" },
+    {
+      name: "description",
+      label: "Description",
+      type: "textarea",
+      maxLength: INPUT_LIMITS.longText,
+    },
     { name: "file_url", label: "File URL", type: "text" },
     {
       name: "status",
@@ -75,7 +102,13 @@ export const TAB_FORM_FIELDS: Record<AccountCrudTableName, TabFormFieldDef[]> = 
   supply_chain: [
     { name: "factory_name", label: "Factory Name", type: "text" },
     { name: "location", label: "Location", type: "text" },
-    { name: "notes", label: "Notes", type: "textarea" },
+    {
+      name: "notes",
+      label: "Notes",
+      type: "textarea",
+      maxLength: INPUT_LIMITS.longText,
+      scrollable: true,
+    },
   ],
   account_projects: [
     { name: "project_name", label: "Project Name", type: "text", required: true },
@@ -83,10 +116,25 @@ export const TAB_FORM_FIELDS: Record<AccountCrudTableName, TabFormFieldDef[]> = 
     { name: "annual_volume", label: "Annual Volume", type: "text" },
     { name: "forecast", label: "Forecast", type: "text" },
     { name: "retail_price_range", label: "Retail Price Range", type: "text" },
-    { name: "distribution_plan", label: "Distribution Plan", type: "textarea" },
+    {
+      name: "distribution_plan",
+      label: "Distribution Plan",
+      type: "textarea",
+      maxLength: INPUT_LIMITS.longText,
+    },
     { name: "manufacturing_venues", label: "Manufacturing Venues", type: "text" },
-    { name: "technical_requirement", label: "Technical Requirement", type: "textarea" },
-    { name: "marketing_request", label: "Marketing Request", type: "textarea" },
+    {
+      name: "technical_requirement",
+      label: "Technical Requirement",
+      type: "textarea",
+      maxLength: INPUT_LIMITS.longText,
+    },
+    {
+      name: "marketing_request",
+      label: "Marketing Request",
+      type: "textarea",
+      maxLength: INPUT_LIMITS.longText,
+    },
   ],
 };
 

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { sanitizeRecordValues } from "@/lib/sanitize";
+import { sanitizeBrandOverviewValues } from "@/lib/sanitize";
 import type { TabFormFieldDef } from "@/lib/schema/tab-form-fields";
 import type { TabInsertResult } from "@/types/tab-crud";
 import type { TablesUpdate } from "@/types/database.types";
@@ -60,7 +60,7 @@ export async function updateBrandOverviewAction(
     return { success: false, error: auth.error };
   }
 
-  const payload = buildBrandOverviewPayload(sanitizeRecordValues(values), fields);
+  const payload = buildBrandOverviewPayload(sanitizeBrandOverviewValues(values), fields);
   const { data, error } = await auth.supabase
     .from("brand_overview")
     .update(payload)
@@ -90,7 +90,7 @@ export async function insertBrandOverviewAction(
 
   const payload = {
     account_id: accountId,
-    ...buildBrandOverviewPayload(sanitizeRecordValues(values), fields),
+    ...buildBrandOverviewPayload(sanitizeBrandOverviewValues(values), fields),
   };
 
   const { data, error } = await auth.supabase
