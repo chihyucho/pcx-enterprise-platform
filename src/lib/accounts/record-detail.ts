@@ -6,6 +6,12 @@ import type {
 const MULTILINE_KEYS_BY_TABLE: Partial<
   Record<AccountCrudTableName, string[]>
 > = {
+  account_projects: [
+    "distribution_plan",
+    "technical_requirement",
+    "marketing_request",
+    "manufacturing_venues",
+  ],
   sales_activities: ["notes"],
   contact_persons: ["notes"],
   quotes: ["notes"],

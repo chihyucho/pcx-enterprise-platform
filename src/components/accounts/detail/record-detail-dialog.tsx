@@ -64,6 +64,8 @@ interface RecordDetailDialogProps {
   projects?: AccountProjectRow[];
   recordTable?: AccountCrudTableName;
   onInlineFieldChange?: () => void;
+  /** Open directly in edit mode (e.g. section-level Edit button). */
+  defaultEditing?: boolean;
 }
 
 export function RecordDetailDialog({
@@ -81,6 +83,7 @@ export function RecordDetailDialog({
   projects = [],
   recordTable,
   onInlineFieldChange,
+  defaultEditing = false,
 }: RecordDetailDialogProps) {
   const showProjectSelect = projects.length > 0;
   const [isEditing, setIsEditing] = useState(false);
@@ -114,14 +117,14 @@ export function RecordDetailDialog({
       setValues(
         rowToFormValues(row, fields, { includeProjectId: showProjectSelect })
       );
-      setIsEditing(false);
+      setIsEditing(defaultEditing);
       setConfirmDeleteOpen(false);
       setFormError(null);
       if (inlineApprovalFieldName) {
         setApprovalStatus(String(row[inlineApprovalFieldName] ?? ""));
       }
     }
-  }, [open, row, fields, showProjectSelect, inlineApprovalFieldName]);
+  }, [open, row, fields, showProjectSelect, inlineApprovalFieldName, defaultEditing]);
 
   function handleOpenChange(next: boolean) {
     if (!next) {

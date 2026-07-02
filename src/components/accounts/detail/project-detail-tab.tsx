@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Loader2, Pencil, Plus } from "lucide-react";
 import { useAccountTabCrud } from "@/hooks/use-account-tab-crud";
+import { getRecordDetailTitle, getMultilineKeysForTable } from "@/lib/accounts/record-detail";
 import { PROJECT_DETAIL_FIELDS } from "@/lib/schema/tab-columns";
 import { AccountDataTable } from "@/components/accounts/detail/account-data-table";
 import { CreateRecordDialog } from "@/components/accounts/detail/create-record-dialog";
+import { RecordDetailDialog } from "@/components/accounts/detail/record-detail-dialog";
 import { AccountTabPanel } from "@/components/accounts/detail/account-tab-panel";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -19,6 +20,8 @@ import {
 import type { Tables } from "@/types/database.types";
 
 type AccountProjectRow = Tables<"account_projects">;
+
+const PROJECT_MULTILINE_KEYS = getMultilineKeysForTable("account_projects");
 
 function projectLabel(project: AccountProjectRow): string {
   const name = project.project_name?.trim();
@@ -48,10 +51,19 @@ export function ProjectDetailTab({
   title,
   enabled,
 }: ProjectDetailTabProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const { rows, error, loading, submitting, reload, create, formFields } =
-    useAccountTabCrud("account_projects", accountId, enabled);
+  const {
+    rows,
+    error,
+    loading,
+    submitting,
+    reload,
+    create,
+    update,
+    formFields,
+  } = useAccountTabCrud("account_projects", accountId, enabled);
 
   const sortedProjects = useMemo(
     () => sortByCreatedAt(rows as AccountProjectRow[]),
@@ -75,6 +87,13 @@ export function ProjectDetailTab({
     ? [selectedProject as unknown as Record<string, unknown>]
     : [];
 
+  async function handleUpdate(values: Record<string, string>) {
+    if (!selectedProject) {
+      return { success: false as const, error: "No project selected." };
+    }
+    return update(selectedProject.id, values);
+  }
+
   return (
     <>
       <div className="space-y-4">
@@ -82,14 +101,29 @@ export function ProjectDetailTab({
           <div>
             <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
             <p className="text-sm text-muted-foreground">
-              Data from <code className="text-xs">account_projects</code> for this
-              account
+              Project details for this account. Use Edit to update the selected
+              project.
             </p>
           </div>
-          <Button onClick={() => setDialogOpen(true)} disabled={loading}>
-            <Plus className="h-4 w-4" />
-            Create New
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!selectedProject || loading}
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              disabled={loading}
+            >
+              <Plus className="h-4 w-4" />
+              Create New
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -144,12 +178,7 @@ export function ProjectDetailTab({
               vertical
               verticalLabelClassName="w-[9.5rem] sm:w-[11rem]"
               verticalValueClassName="text-foreground"
-              multilineKeys={[
-                "distribution_plan",
-                "technical_requirement",
-                "marketing_request",
-                "manufacturing_venues",
-              ]}
+              multilineKeys={PROJECT_MULTILINE_KEYS}
               emptyMessage="No records yet."
             />
           </div>
@@ -157,8 +186,8 @@ export function ProjectDetailTab({
       </div>
 
       <CreateRecordDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         title={title}
         tableName="account_projects"
         accountId={accountId}
@@ -166,6 +195,26 @@ export function ProjectDetailTab({
         submitting={submitting}
         onSubmit={create}
       />
+
+      {selectedProject ? (
+        <RecordDetailDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          title={getRecordDetailTitle(
+            "account_projects",
+            selectedProject as unknown as Record<string, unknown>
+          )}
+          subtitle={`${title} details`}
+          row={selectedProject as unknown as Record<string, unknown>}
+          viewColumns={PROJECT_DETAIL_FIELDS}
+          fields={formFields}
+          submitting={submitting}
+          defaultEditing
+          onSubmit={handleUpdate}
+          multilineKeys={PROJECT_MULTILINE_KEYS}
+          recordTable="account_projects"
+        />
+      ) : null}
     </>
   );
 }
